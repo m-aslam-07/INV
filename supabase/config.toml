@@ -1,0 +1,28 @@
+{
+  "projects": {
+    "default": {
+      "db": {
+        "host": "127.0.0.1",
+        "port": 54321,
+        "database": "postgres",
+        "username": "postgres",
+        "password": "postgres"
+      },
+      "api": {
+        "port": 54322,
+        "protocols": ["rest", "realtime", "graphql"]
+      },
+      "studio": {
+        "port": 54323
+      },
+      "inbucket": {
+        "port": 54324
+      },
+      "jwt": {
+        "secret": "super-secret-jwt-token-with-at-least-32-characters-long",
+        "exp": 3600,
+        "alg": "HS256"
+      }
+    }
+  }
+}

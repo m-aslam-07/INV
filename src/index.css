@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Invoice preview print styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #invoice-preview-target,
+  #invoice-preview-target * {
+    visibility: visible;
+  }
+  #invoice-preview-target {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+}
+
+/* Smooth section transitions */
+.section-collapse {
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+/* Toast animations */
+.toast-enter {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.toast-exit {
+  animation: slideInRight 0.3s ease-out reverse;
+}
+
+/* Float animation for hero mockup */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Wizard slide animations */
+@keyframes wizardSlideRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes wizardSlideLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-wizard-right {
+  animation: wizardSlideRight 0.25s ease-out;
+}
+.animate-wizard-left {
+  animation: wizardSlideLeft 0.25s ease-out;
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Input focus styles */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  ring: 2px;
+}
