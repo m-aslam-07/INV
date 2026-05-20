@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useInvoiceStore, type InvoiceState } from '../../hooks/useInvoiceStore';
 import { useAuthStore } from '../../hooks/useAuthStore';
 import { resolveTemplate } from '../invoice/templateRegistry';
+import { ElementRemover } from './ElementRemover';
 
 export function PreviewPanel() {
   const store = useInvoiceStore();
@@ -36,9 +37,12 @@ export function PreviewPanel() {
 
   return (
     <div className="h-full overflow-y-auto bg-gray-50 p-6" ref={containerRef}>
-      {/* Zoom controls */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-xs text-gray-400">Live Preview</p>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <p className="text-xs text-gray-400">Live Preview</p>
+          <ElementRemover />
+        </div>
         <div className="flex items-center gap-1">
           {updating && (
             <span className="text-xs text-blue-500 mr-2 animate-pulse">Updating...</span>
@@ -52,19 +56,21 @@ export function PreviewPanel() {
         </div>
       </div>
 
-      {/* A4 Preview */}
+      {/* A4 Preview with relative wrapper for overlay positioning */}
       <div className="flex justify-center">
-        <div
-          style={{ transform: `scale(${scale})`, transformOrigin: 'top center', width: '210mm', minHeight: '297mm' }}
-        >
+        <div className="relative" id="invoice-preview-wrapper">
           <div
-            id="invoice-preview-target"
-            className="bg-white shadow-xl rounded-lg p-8"
-            style={{ width: '210mm', minHeight: '297mm' }}
+            style={{ transform: `scale(${scale})`, transformOrigin: 'top center', width: '210mm', minHeight: '297mm' }}
           >
-            <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading Template...</div>}>
-              <Template state={state} isPro={isPro} />
-            </Suspense>
+            <div
+              id="invoice-preview-target"
+              className="bg-white shadow-xl rounded-lg p-8"
+              style={{ width: '210mm', minHeight: '297mm' }}
+            >
+              <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading Template...</div>}>
+                <Template state={state} isPro={isPro} />
+              </Suspense>
+            </div>
           </div>
         </div>
       </div>

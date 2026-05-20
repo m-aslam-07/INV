@@ -13,7 +13,7 @@ export default function CanvasTemplate({ state, isPro }: TemplateProps) {
       <div style={{ backgroundColor: brand, padding: '40px 32px 32px', marginLeft: '-32px', marginRight: '-32px', marginTop: '-32px', marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            {state.business.logoUrl && <img src={state.business.logoUrl} alt="Logo" style={{ height: '40px', marginBottom: '12px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />}
+            {state.business.logoUrl && <img src={state.business.logoUrl} alt="Logo" style={{ height: '40px', marginBottom: '12px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '6px', padding: '4px 8px' }} />}
             <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#fff', letterSpacing: '1px' }}>{state.business.name || 'Your Business'}</h1>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '4px', fontFamily: 'Inter, sans-serif' }}>{state.business.email}</p>
           </div>

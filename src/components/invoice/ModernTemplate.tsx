@@ -37,7 +37,7 @@ export function ModernTemplate({ state, isPro }: TemplateProps) {
         <div className="flex justify-between items-start">
           <div>
             {state.business.logoUrl && (
-              <img src={state.business.logoUrl} alt="Logo" className="h-10 mb-2 object-contain brightness-0 invert" />
+              <img src={state.business.logoUrl} alt="Logo" className="h-10 mb-2 object-contain" style={{ backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '6px', padding: '4px 8px' }} />
             )}
             <h1 className="text-2xl font-bold">{state.business.name || 'Your Business'}</h1>
             {state.business.email && <p className="text-gray-400 text-sm mt-1">{state.business.email}</p>}

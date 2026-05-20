@@ -1,9 +1,10 @@
+import { Link } from 'react-router-dom';
 import { Modal } from '../ui/Modal';
 import { useAuthStore } from '../../hooks/useAuthStore';
-import { Check, X, Sparkles } from 'lucide-react';
+import { Check, X, Sparkles, ArrowRight } from 'lucide-react';
 
 export function UpgradeModal() {
-  const { upgradeModalOpen, closeUpgradeModal, upgradeFeature } = useAuthStore();
+  const { upgradeModalOpen, closeUpgradeModal, upgradeFeature, user } = useAuthStore();
 
   const freeFeatures = [
     'All 5 templates',
@@ -19,6 +20,8 @@ export function UpgradeModal() {
     'One-click duplicate',
     'Business profile saved',
   ];
+
+  const upgradeLink = user ? '/upgrade' : '/login';
 
   return (
     <Modal isOpen={upgradeModalOpen} onClose={closeUpgradeModal} title="Upgrade to Pro">
@@ -65,16 +68,16 @@ export function UpgradeModal() {
           </div>
         </div>
 
-        <a
-          href="https://strikin.lemonsqueezy.com/checkout"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-3 rounded-xl font-medium transition-colors"
+        <Link
+          to={upgradeLink}
+          state={!user ? { from: { pathname: '/upgrade' } } : undefined}
+          onClick={closeUpgradeModal}
+          className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-3 rounded-xl font-medium transition-colors"
         >
-          Upgrade to Pro — ₹199/mo
-        </a>
+          Upgrade to Pro — ₹199/mo <ArrowRight size={14} />
+        </Link>
         <p className="text-center text-xs text-gray-400">
-          Or save ₹900/yr with annual plan at ₹1,499/yr
+          Or save ₹889/yr with annual plan at ₹1,499/yr
         </p>
       </div>
     </Modal>

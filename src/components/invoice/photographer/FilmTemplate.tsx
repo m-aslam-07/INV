@@ -15,7 +15,7 @@ export default function FilmTemplate({ state, isPro }: TemplateProps) {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            {state.business.logoUrl && <img src={state.business.logoUrl} alt="Logo" style={{ height: '32px', marginBottom: '8px', filter: 'brightness(0) invert(1)' }} />}
+            {state.business.logoUrl && <img src={state.business.logoUrl} alt="Logo" style={{ height: '32px', marginBottom: '8px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '6px', padding: '4px 8px' }} />}
             <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#d4a847' }}>{state.business.name || 'Your Business'}</h1>
             <p style={{ color: '#666', fontSize: '12px' }}>{state.business.email}</p>
           </div>

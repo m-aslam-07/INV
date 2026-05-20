@@ -1,9 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useInvoiceStore } from '../../../hooks/useInvoiceStore';
+import { useCompanyProfile } from '../../../hooks/useCompanyProfile';
 import { validateGSTIN } from '../../../utils/gstinValidator';
 import { stateFromGSTIN } from '../../../utils/gstinStateCodes';
 import { ProGated } from '../ProGated';
-import { Upload, Check, AlertCircle } from 'lucide-react';
+import { Upload, Check, AlertCircle, Loader2 } from 'lucide-react';
 
 const inputCls = 'border border-gray-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all duration-150 bg-white';
 const labelCls = 'text-xs font-medium text-gray-400 uppercase tracking-wider mb-3';
@@ -15,16 +16,24 @@ const CURRENCIES = [
 
 export function StepDetails() {
   const store = useInvoiceStore();
+  const { uploadLogoFile } = useCompanyProfile();
+  const [logoUploading, setLogoUploading] = useState(false);
   const bizGstinValid = validateGSTIN(store.business.gstin);
   const clientGstinValid = validateGSTIN(store.client.gstin);
 
-  const handleLogoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => store.updateBusiness({ logoUrl: reader.result as string });
-    reader.readAsDataURL(file);
-  }, [store]);
+    setLogoUploading(true);
+    try {
+      const url = await uploadLogoFile(file);
+      if (url) store.updateBusiness({ logoUrl: url });
+    } catch (err) {
+      console.error('Logo upload failed:', err);
+    } finally {
+      setLogoUploading(false);
+    }
+  }, [store, uploadLogoFile]);
 
   const setDueFromTerms = (days: number) => {
     const d = new Date(store.document.date);
@@ -67,8 +76,10 @@ export function StepDetails() {
           </div>
           <input className={inputCls} placeholder="PAN" value={store.business.pan} onChange={e => store.updateBusiness({ pan: e.target.value.toUpperCase() })} />
           <ProGated feature="Logo upload">
-            <label className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center cursor-pointer block hover:border-blue-300 transition-colors">
-              {store.business.logoUrl ? (
+            <label className={`border-2 border-dashed border-gray-200 rounded-lg p-4 text-center cursor-pointer block hover:border-blue-300 transition-colors ${logoUploading ? 'opacity-60 pointer-events-none' : ''}`}>
+              {logoUploading ? (
+                <div className="text-blue-500 text-sm"><Loader2 size={20} className="mx-auto mb-1 animate-spin" />Uploading...</div>
+              ) : store.business.logoUrl ? (
                 <img src={store.business.logoUrl} alt="Logo" className="h-12 mx-auto object-contain" />
               ) : (
                 <div className="text-gray-400 text-sm"><Upload size={20} className="mx-auto mb-1" />Upload logo</div>

@@ -1,8 +1,6 @@
-'use client';
-
-import { useAuth, useUserPlan } from '@/hooks/useAuth';
-import Link from 'next/link';
 import { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuthStore } from '../../hooks/useAuthStore';
 
 interface ProGatedProps {
   children: ReactNode;
@@ -14,14 +12,13 @@ interface ProGatedProps {
  * Shows upgrade prompt for free users
  */
 export function ProGated({ children, fallback }: ProGatedProps) {
-  const { user, isAuthenticated } = useAuth();
-  const { isPro, loading } = useUserPlan();
+  const { user, isPro, loading, openUpgradeModal } = useAuthStore();
 
   if (loading) {
     return <div className="p-4">Loading...</div>;
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return (
       fallback || (
         <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
@@ -30,13 +27,13 @@ export function ProGated({ children, fallback }: ProGatedProps) {
           </p>
           <div className="flex gap-2">
             <Link
-              href="/login"
+              to="/login"
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
             >
               Sign In
             </Link>
             <Link
-              href="/pricing"
+              to="/pricing"
               className="px-4 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 text-sm"
             >
               View Plans
@@ -54,12 +51,12 @@ export function ProGated({ children, fallback }: ProGatedProps) {
           <p className="text-sm text-gray-700 mb-3">
             Upgrade to PRO to unlock this feature
           </p>
-          <Link
-            href="/pricing"
+          <button
+            onClick={() => openUpgradeModal('Pro features')}
             className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
           >
             Upgrade to Pro
-          </Link>
+          </button>
         </div>
       )
     );
@@ -72,7 +69,7 @@ export function ProGated({ children, fallback }: ProGatedProps) {
  * Component that renders different content for free vs pro users
  */
 export function PlanAware({ free, pro }: { free: ReactNode; pro: ReactNode }) {
-  const { isPro, loading } = useUserPlan();
+  const { isPro, loading } = useAuthStore();
 
   if (loading) return <div>Loading...</div>;
 

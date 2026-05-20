@@ -11,7 +11,7 @@ export default function AgencyTemplate({ state, isPro }: TemplateProps) {
     <div style={{ fontFamily: "'Inter', sans-serif", fontSize, lineHeight, color: '#27272a' }} className="w-full">
       <div style={{ backgroundColor: brand, color: '#fff', padding: '32px 40px', marginLeft: '-32px', marginRight: '-32px', marginTop: '-32px', marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          {state.business.logoUrl && <img src={state.business.logoUrl} alt="Logo" style={{ height: '40px', marginBottom: '16px', filter: 'brightness(0) invert(1)', objectFit: 'contain' }} />}
+          {state.business.logoUrl && <img src={state.business.logoUrl} alt="Logo" style={{ height: '40px', marginBottom: '16px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '6px', padding: '4px 8px' }} />}
           <h1 style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '-0.5px' }}>{state.business.name || 'Creative Agency'}</h1>
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '4px' }}>{[state.business.email, state.business.phone].filter(Boolean).join(' | ')}</p>
         </div>

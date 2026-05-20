@@ -1,32 +1,28 @@
-import { jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
+// Auth utilities (client-side Vite-compatible)
+// The old file used jose + next/headers which don't work in Vite
 
-const secret = new TextEncoder().encode(
-  process.env.SUPABASE_JWT_SECRET || 'super-secret-jwt-token-with-at-least-32-characters-long'
-);
+import { supabase } from './supabase/client';
 
 /**
- * Get the current user from the JWT token in cookies
- * Only works in Server Components and Route Handlers
+ * Get the current authenticated user's ID
  */
-export async function getCurrentUser() {
+export async function getCurrentUserId(): Promise<string | null> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('sb-access-token')?.value;
-
-    if (!token) return null;
-
-    const verified = await jwtVerify(token, secret);
-    return verified.payload;
-  } catch (error) {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.user?.id ?? null;
+  } catch {
     return null;
   }
 }
 
 /**
- * Get user ID from auth context
+ * Get current user's email
  */
-export async function getUserId(): Promise<string | null> {
-  const user = await getCurrentUser();
-  return (user?.sub as string) || null;
+export async function getCurrentUserEmail(): Promise<string | null> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.user?.email ?? null;
+  } catch {
+    return null;
+  }
 }

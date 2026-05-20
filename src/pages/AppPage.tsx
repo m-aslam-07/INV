@@ -3,13 +3,15 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useInvoiceStore } from '../hooks/useInvoiceStore';
 import { useAuthStore } from '../hooks/useAuthStore';
 import { useToastStore } from '../hooks/useToastStore';
+import { useInvoiceStorage } from '../hooks/useInvoiceStorage';
+import { useCompanyProfile } from '../hooks/useCompanyProfile';
 import { FormPanel } from '../components/app/FormPanel';
 import { PreviewPanel } from '../components/app/PreviewPanel';
 import { HistoryPanel } from '../components/app/HistoryPanel';
 import { UpgradeModal } from '../components/app/UpgradeModal';
-import { calcTotals } from '../utils/calculations';
+import { LoginModal } from '../components/auth/LoginModal';
 import { loadFromHash } from '../utils/shareLink';
-import { Zap, Sparkles } from 'lucide-react';
+import { Zap, Sparkles, LogOut, LogIn } from 'lucide-react';
 
 export default function AppPage() {
   const [searchParams] = useSearchParams();
@@ -21,8 +23,11 @@ export default function AppPage() {
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   const store = useInvoiceStore();
-  const { isPro } = useAuthStore();
+  const { isPro, user, openLoginModal, signOut } = useAuthStore();
   const { addToast } = useToastStore();
+  const invoiceStorage = useInvoiceStorage();
+  // Auto-loads and fills company profile for Pro users
+  useCompanyProfile();
 
   // Load from URL params on mount
   useEffect(() => {
@@ -103,22 +108,13 @@ export default function AppPage() {
 
       pdf.save(fname);
 
-      // Save to history
-      const totals = calcTotals(state);
-      const historyEntry = {
-        id: Math.random().toString(36).substring(2, 9),
-        savedAt: new Date().toISOString(),
-        invoiceNumber: state.document.number,
-        clientName: state.client.name,
-        total: totals.total,
-        currency: state.document.currency,
-        state,
-      };
+      // Save to persistent storage (Supabase for Pro, localStorage for Free)
       try {
-        const existing = JSON.parse(localStorage.getItem('sk_history') || '[]');
-        const updated = [historyEntry, ...existing].slice(0, 50);
-        localStorage.setItem('sk_history', JSON.stringify(updated));
-      } catch {}
+        await invoiceStorage.save();
+      } catch (saveErr) {
+        console.warn('[Invoice save warning]', saveErr);
+        // Non-critical — PDF was already downloaded
+      }
 
       setDownloadSuccess(true);
       addToast('PDF downloaded successfully');
@@ -129,7 +125,7 @@ export default function AppPage() {
     } finally {
       setDownloading(false);
     }
-  }, [store, addToast]);
+  }, [store, addToast, invoiceStorage]);
 
   return (
     <div className="h-screen flex flex-col bg-white">
@@ -141,11 +137,20 @@ export default function AppPage() {
           </div>
           <span className="font-semibold text-sm text-gray-900">Strikin</span>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {!isPro && (
             <button onClick={() => useAuthStore.getState().openUpgradeModal('Pro features')}
               className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg font-medium hover:bg-blue-100 transition-colors">
               <Sparkles size={12} /> Upgrade to Pro
+            </button>
+          )}
+          {user ? (
+            <button onClick={signOut} className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 px-2 py-1.5">
+              <LogOut size={14} /> Sign out
+            </button>
+          ) : (
+            <button onClick={openLoginModal} className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 px-2 py-1.5">
+              <LogIn size={14} /> Sign in
             </button>
           )}
         </div>
@@ -189,6 +194,7 @@ export default function AppPage() {
       </div>
 
       <UpgradeModal />
+      <LoginModal />
     </div>
   );
 }

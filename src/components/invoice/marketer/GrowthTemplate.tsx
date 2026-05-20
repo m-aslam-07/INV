@@ -12,7 +12,7 @@ export default function GrowthTemplate({ state, isPro }: TemplateProps) {
       <div style={{ background: `linear-gradient(135deg, ${brand}, #8b5cf6)`, padding: '32px', marginLeft: '-32px', marginRight: '-32px', marginTop: '-32px', marginBottom: '32px', color: '#fff', borderRadius: '0 0 24px 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
-            {state.business.logoUrl && <img src={state.business.logoUrl} alt="Logo" style={{ height: '40px', marginBottom: '12px', filter: 'brightness(0) invert(1)' }} />}
+            {state.business.logoUrl && <img src={state.business.logoUrl} alt="Logo" style={{ height: '40px', marginBottom: '12px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '6px', padding: '4px 8px' }} />}
             <h1 style={{ fontSize: '24px', fontWeight: 700 }}>{state.business.name || 'Marketing Agency'}</h1>
             <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', marginTop: '4px' }}>{state.business.email} {state.business.phone && `| ${state.business.phone}`}</p>
           </div>

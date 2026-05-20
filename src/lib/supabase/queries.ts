@@ -1,5 +1,5 @@
 import { supabase } from './client';
-import { SharedInvoice, UserProfile } from './types';
+import { SharedInvoice, UserProfile } from '../types';
 
 /**
  * Supabase database queries

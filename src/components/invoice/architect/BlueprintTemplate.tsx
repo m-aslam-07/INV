@@ -12,7 +12,7 @@ export default function BlueprintTemplate({ state, isPro }: TemplateProps) {
       <div style={{ backgroundColor: navy, color: '#fff', padding: '24px 32px', marginLeft: '-32px', marginRight: '-32px', marginTop: '-32px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            {state.business.logoUrl && <img src={state.business.logoUrl} alt="Logo" style={{ height: '32px', marginBottom: '8px', filter: 'brightness(0) invert(1)' }} />}
+            {state.business.logoUrl && <img src={state.business.logoUrl} alt="Logo" style={{ height: '32px', marginBottom: '8px', objectFit: 'contain', backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '6px', padding: '4px 8px' }} />}
             <h1 style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '2px' }}>{state.business.name || 'Your Business'}</h1>
             <p style={{ color: '#94b8db', fontSize: '11px' }}>{state.business.email}</p>
           </div>

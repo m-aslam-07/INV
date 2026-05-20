@@ -39,7 +39,7 @@ export function BoldTemplate({ state, isPro }: TemplateProps) {
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             {state.business.logoUrl && (
-              <img src={state.business.logoUrl} alt="Logo" className="h-12 object-contain brightness-0 invert" />
+              <img src={state.business.logoUrl} alt="Logo" className="h-12 object-contain" style={{ backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '6px', padding: '4px 8px' }} />
             )}
             <div>
               <h1 className="text-2xl font-bold">{state.business.name || 'Your Business'}</h1>

@@ -1,52 +1,50 @@
 import { useState, useEffect } from 'react';
 import { useInvoiceStore } from '../../hooks/useInvoiceStore';
+import { useInvoiceStorage } from '../../hooks/useInvoiceStorage';
 import { useToastStore } from '../../hooks/useToastStore';
 import { formatCurrency } from '../../utils/calculations';
-import { Clock, Copy, Trash2 } from 'lucide-react';
-
-interface HistoryEntry {
-  id: string;
-  savedAt: string;
-  invoiceNumber: string;
-  clientName: string;
-  total: number;
-  currency: string;
-  state: ReturnType<typeof useInvoiceStore.getState>['getFullState'] extends () => infer R ? R : never;
-}
+import type { StoredInvoice } from '../../lib/types';
+import { Clock, Copy, Trash2, Loader2 } from 'lucide-react';
 
 export function HistoryPanel({ onClose }: { onClose: () => void }) {
-  const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const store = useInvoiceStore();
   const { addToast } = useToastStore();
+  const { loadHistory, deleteEntry, restoreEntry, history, loading } = useInvoiceStorage();
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('sk_history');
-      if (saved) setEntries(JSON.parse(saved));
-    } catch {}
-  }, []);
+    loadHistory();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const loadEntry = (entry: HistoryEntry) => {
-    store.loadState(entry.state);
-    addToast('Invoice restored from history');
+  const handleRestore = (entry: StoredInvoice) => {
+    restoreEntry(entry);
     onClose();
   };
 
-  const duplicateEntry = (entry: HistoryEntry) => {
-    const last = localStorage.getItem('ik_last_inv');
+  const duplicateEntry = (entry: StoredInvoice) => {
+    if (!entry.invoice_json) return;
+    const last = localStorage.getItem('sk_last_inv');
     const num = last ? parseInt(last) + 1 : 1;
-    localStorage.setItem('ik_last_inv', num.toString());
+    localStorage.setItem('sk_last_inv', num.toString());
     const newNumber = `INV-${num.toString().padStart(4, '0')}`;
-    const newState = { ...entry.state, document: { ...entry.state.document, number: newNumber } };
-    store.loadState(newState);
+
+    const newState = {
+      ...entry.invoice_json,
+      document: { ...entry.invoice_json.document, number: newNumber },
+    };
+    store.loadState(newState as any);
     addToast('Invoice duplicated with new number');
     onClose();
   };
 
-  const deleteEntry = (id: string) => {
-    const updated = entries.filter(e => e.id !== id);
-    setEntries(updated);
-    localStorage.setItem('sk_history', JSON.stringify(updated));
+  const getEntryLabel = (entry: StoredInvoice) => {
+    const inv = entry.invoice_json;
+    if (!inv) return { name: 'Unnamed', number: entry.id, total: 0, currency: 'INR' };
+    return {
+      name: inv.client?.name || inv.business?.name || 'Unnamed',
+      number: inv.document?.number || entry.id,
+      total: 0, // We don't store computed totals — that's intentional to save space
+      currency: inv.document?.currency || 'INR',
+    };
   };
 
   return (
@@ -59,35 +57,42 @@ export function HistoryPanel({ onClose }: { onClose: () => void }) {
         <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-700">Close</button>
       </div>
 
-      {entries.length === 0 ? (
+      {loading ? (
+        <div className="p-8 flex flex-col items-center justify-center gap-2">
+          <Loader2 size={20} className="animate-spin text-blue-500" />
+          <p className="text-sm text-gray-400">Loading history...</p>
+        </div>
+      ) : history.length === 0 ? (
         <div className="p-8 text-center">
           <Clock size={32} className="mx-auto text-gray-200 mb-3" />
           <p className="text-sm text-gray-400">Your invoice history will appear here after your first download</p>
         </div>
       ) : (
         <div className="p-2 space-y-1">
-          {entries.map(entry => (
-            <div key={entry.id} className="p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-100 group"
-              onClick={() => loadEntry(entry)}>
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-medium text-sm text-gray-900">{entry.clientName || 'Unnamed'}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{entry.invoiceNumber} · {new Date(entry.savedAt).toLocaleDateString()}</p>
+          {history.map(entry => {
+            const label = getEntryLabel(entry);
+            return (
+              <div key={entry.id} className="p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-100 group"
+                onClick={() => handleRestore(entry)}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium text-sm text-gray-900">{label.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{label.number} · {new Date(entry.created_at).toLocaleDateString()}</p>
+                  </div>
                 </div>
-                <p className="text-sm font-semibold text-gray-900">{formatCurrency(entry.total, entry.currency)}</p>
+                <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={(e) => { e.stopPropagation(); duplicateEntry(entry); }}
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:bg-blue-50 px-2 py-1 rounded">
+                    <Copy size={10} /> Duplicate
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); deleteEntry(entry.id); }}
+                    className="flex items-center gap-1 text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded">
+                    <Trash2 size={10} /> Delete
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={(e) => { e.stopPropagation(); duplicateEntry(entry); }}
-                  className="flex items-center gap-1 text-xs text-blue-600 hover:bg-blue-50 px-2 py-1 rounded">
-                  <Copy size={10} /> Duplicate
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); deleteEntry(entry.id); }}
-                  className="flex items-center gap-1 text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded">
-                  <Trash2 size={10} /> Delete
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

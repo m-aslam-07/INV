@@ -1,6 +1,6 @@
 import { supabase } from './supabase/client';
-import { env } from './env';
 import { getShareLink } from './supabase/queries';
+import { env } from './env';
 
 /**
  * Generate a shareable link for an invoice
@@ -26,7 +26,7 @@ export async function generateShareLink(
 
     if (error) throw error;
 
-    return getShareLink(data.token, env.NEXT_PUBLIC_APP_URL);
+    return getShareLink(data.token, env.APP_URL);
   } catch (error) {
     console.error('Failed to generate share link:', error);
     throw error;

@@ -1,6 +1,8 @@
+import { Link } from 'react-router-dom';
 import { Navbar } from '../components/landing/Navbar';
 import { Footer } from '../components/landing/Footer';
-import { Check, X } from 'lucide-react';
+import { useAuthStore } from '../hooks/useAuthStore';
+import { Check, X, Crown, Sparkles } from 'lucide-react';
 
 const features = [
   { name: 'All templates', free: true, pro: true },
@@ -14,9 +16,15 @@ const features = [
   { name: 'Shareable link', free: false, pro: true },
   { name: 'UPI QR code', free: false, pro: true },
   { name: 'Business profile saved', free: false, pro: true },
+  { name: 'Cloud sync', free: false, pro: true },
+  { name: 'Save custom templates', free: false, pro: true },
 ];
 
 export default function PricingPage() {
+  const { user, isPro } = useAuthStore();
+
+  const upgradeLink = user ? '/upgrade' : '/login';
+
   return (
     <div className="bg-white min-h-screen">
       <Navbar />
@@ -24,6 +32,14 @@ export default function PricingPage() {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-3">Simple, transparent pricing</h1>
           <p className="text-gray-500 text-center mb-12">Start free. Upgrade when you need more.</p>
+
+          {isPro && (
+            <div className="max-w-md mx-auto mb-8 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 text-center">
+              <p className="text-sm text-amber-700 flex items-center gap-1.5 justify-center">
+                <Crown size={14} /> You're on the Pro plan — all features unlocked!
+              </p>
+            </div>
+          )}
 
           <div className="grid md:grid-cols-3 gap-4">
             {/* Free */}
@@ -39,7 +55,7 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/app" className="block text-center py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Start free</a>
+              <Link to="/app" className="block text-center py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Start free</Link>
             </div>
 
             {/* Pro */}
@@ -55,10 +71,19 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="https://strikin.lemonsqueezy.com/checkout" target="_blank" rel="noopener noreferrer"
-                className="block text-center py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
-                Upgrade to Pro
-              </a>
+              {isPro ? (
+                <div className="text-center py-2.5 rounded-xl bg-green-50 text-green-700 text-sm font-medium flex items-center justify-center gap-1.5">
+                  <Sparkles size={14} /> Current Plan
+                </div>
+              ) : (
+                <Link
+                  to={upgradeLink}
+                  state={!user ? { from: { pathname: '/upgrade' } } : undefined}
+                  className="block text-center py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Upgrade to Pro
+                </Link>
+              )}
             </div>
 
             {/* Annual */}
@@ -66,7 +91,7 @@ export default function PricingPage() {
               <h3 className="font-semibold text-gray-900 mb-1">Annual</h3>
               <p className="text-4xl font-bold text-gray-900 mb-1">₹1,499<span className="text-base font-normal text-gray-400">/yr</span></p>
               <div className="mb-6">
-                <span className="inline-block bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">Save ₹900/yr</span>
+                <span className="inline-block bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">Save ₹889/yr</span>
               </div>
               <ul className="space-y-2.5 mb-6">
                 {features.map(f => (
@@ -75,10 +100,19 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="https://strikin.lemonsqueezy.com/checkout" target="_blank" rel="noopener noreferrer"
-                className="block text-center py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                Get annual plan
-              </a>
+              {isPro ? (
+                <div className="text-center py-2.5 rounded-xl bg-green-50 text-green-700 text-sm font-medium flex items-center justify-center gap-1.5">
+                  <Sparkles size={14} /> Current Plan
+                </div>
+              ) : (
+                <Link
+                  to={upgradeLink}
+                  state={!user ? { from: { pathname: '/upgrade' } } : undefined}
+                  className="block text-center py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Get annual plan
+                </Link>
+              )}
             </div>
           </div>
         </div>

@@ -22,7 +22,7 @@ export default function TerminalTemplate({ state, isPro }: TemplateProps) {
         <div className="flex justify-between items-start">
           <div>
             {state.business.logoUrl && (
-              <img src={state.business.logoUrl} alt="Logo" className="h-8 mb-2 object-contain" style={{ filter: 'brightness(0) invert(1)' }} />
+              <img src={state.business.logoUrl} alt="Logo" className="h-8 mb-2 object-contain" style={{ backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '6px', padding: '4px 8px' }} />
             )}
             <h1 className="text-xl font-bold" style={{ color: '#38bdf8' }}>{state.business.name || 'Your Business'}</h1>
             <p style={{ color: '#64748b', fontSize: '12px' }}>{state.business.email}</p>

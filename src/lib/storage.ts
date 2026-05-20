@@ -1,5 +1,5 @@
 import { supabase } from './supabase/client';
-import { InvoiceData, StoredInvoice, SavedTemplate, CompanyProfile } from './types';
+import type { InvoiceData, StoredInvoice, SavedTemplate, CompanyProfile } from './types';
 
 /**
  * Storage abstraction layer
@@ -7,105 +7,136 @@ import { InvoiceData, StoredInvoice, SavedTemplate, CompanyProfile } from './typ
  */
 
 // ============================================================================
+// HELPERS
+// ============================================================================
+
+/** Strip empty strings / null / default values to minimize JSON payload */
+function compactInvoiceJson(invoice: InvoiceData): InvoiceData {
+  const compact = { ...invoice };
+  // Remove empty optional strings from business
+  const biz = { ...compact.business };
+  if (!biz.gstin) delete (biz as any).gstin;
+  if (!biz.pan) delete (biz as any).pan;
+  if (!biz.logoUrl) delete (biz as any).logoUrl;
+  compact.business = biz;
+  // Remove empty optional strings from client
+  const cl = { ...compact.client };
+  if (!cl.gstin) delete (cl as any).gstin;
+  if (!cl.poNumber) delete (cl as any).poNumber;
+  compact.client = cl;
+  // Remove default notes/terms to save space
+  if (!compact.notes) delete (compact as any).notes;
+  if (!compact.terms) delete (compact as any).terms;
+  // Remove timestamps if present
+  delete compact.createdAt;
+  delete compact.updatedAt;
+  delete compact.id;
+  return compact;
+}
+
+// ============================================================================
 // INVOICES
 // ============================================================================
 
+const INVOICE_SELECT = 'id, user_id, invoice_json, created_at, updated_at';
+
+/**
+ * Save invoice. For Pro users, deduplicates by invoice_json->document->number
+ * to prevent saving the same invoice multiple times on repeated downloads.
+ */
 export async function saveInvoice(
   invoice: InvoiceData,
   userId?: string
 ): Promise<StoredInvoice | null> {
+  const compacted = compactInvoiceJson(invoice);
+
   // FREE: localStorage
   if (!userId) {
     const invoices = getLocalInvoices();
+    // Dedup by invoice number
+    const invoiceNumber = invoice.document?.number;
+    if (invoiceNumber) {
+      const existing = invoices.findIndex(
+        inv => inv.invoice_json?.document?.number === invoiceNumber
+      );
+      if (existing !== -1) {
+        // Update existing instead of creating duplicate
+        invoices[existing] = {
+          ...invoices[existing],
+          invoice_json: compacted,
+          updated_at: new Date().toISOString(),
+        };
+        localStorage.setItem('sk_free_invoices', JSON.stringify(invoices));
+        return invoices[existing];
+      }
+    }
     const newInvoice: StoredInvoice = {
-      id: invoice.id || `invoice_${Date.now()}`,
+      id: `local_${Date.now()}`,
       user_id: 'local',
-      invoice_json: invoice,
+      invoice_json: compacted,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    invoices.push(newInvoice);
-    localStorage.setItem('invoices', JSON.stringify(invoices));
+    invoices.unshift(newInvoice);
+    // Keep max 50 entries
+    localStorage.setItem('sk_free_invoices', JSON.stringify(invoices.slice(0, 50)));
     return newInvoice;
   }
 
-  // PRO: Supabase
-  const { data, error } = await supabase.from('invoices').insert({
-    user_id: userId,
-    invoice_json: invoice,
-  }).select().single();
+  // PRO: Supabase — dedup by invoice number
+  const invoiceNumber = invoice.document?.number;
+  if (invoiceNumber) {
+    const { data: existing } = await supabase
+      .from('invoices')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('invoice_json->>document->>number', invoiceNumber)
+      .maybeSingle();
+
+    if (existing) {
+      // Update existing invoice
+      const { data, error } = await supabase
+        .from('invoices')
+        .update({ invoice_json: compacted })
+        .eq('id', existing.id)
+        .eq('user_id', userId)
+        .select(INVOICE_SELECT)
+        .single();
+      if (error) throw error;
+      return data;
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('invoices')
+    .insert({ user_id: userId, invoice_json: compacted })
+    .select(INVOICE_SELECT)
+    .single();
 
   if (error) throw error;
   return data;
 }
 
-export async function getInvoices(userId?: string): Promise<StoredInvoice[]> {
+export async function getInvoices(
+  userId?: string,
+  limit = 50,
+  offset = 0
+): Promise<StoredInvoice[]> {
   // FREE: localStorage
   if (!userId) {
-    return getLocalInvoices();
+    return getLocalInvoices().slice(offset, offset + limit);
   }
 
   // PRO: Supabase
   const { data, error } = await supabase
     .from('invoices')
-    .select('*')
+    .select(INVOICE_SELECT)
     .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (error) throw error;
   return data || [];
-}
-
-export async function getInvoice(id: string, userId?: string): Promise<StoredInvoice | null> {
-  // FREE: localStorage
-  if (!userId) {
-    const invoices = getLocalInvoices();
-    return invoices.find(inv => inv.id === id) || null;
-  }
-
-  // PRO: Supabase
-  const { data, error } = await supabase
-    .from('invoices')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', userId)
-    .single();
-
-  if (error && error.code !== 'PGRST116') throw error;
-  return data || null;
-}
-
-export async function updateInvoice(
-  id: string,
-  invoice: Partial<InvoiceData>,
-  userId?: string
-): Promise<StoredInvoice | null> {
-  // FREE: localStorage
-  if (!userId) {
-    const invoices = getLocalInvoices();
-    const index = invoices.findIndex(inv => inv.id === id);
-    if (index === -1) return null;
-
-    invoices[index] = {
-      ...invoices[index],
-      invoice_json: { ...invoices[index].invoice_json, ...invoice },
-      updated_at: new Date().toISOString(),
-    };
-    localStorage.setItem('invoices', JSON.stringify(invoices));
-    return invoices[index];
-  }
-
-  // PRO: Supabase
-  const { data, error } = await supabase
-    .from('invoices')
-    .update({ invoice_json: invoice })
-    .eq('id', id)
-    .eq('user_id', userId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
 }
 
 export async function deleteInvoice(id: string, userId?: string): Promise<void> {
@@ -113,7 +144,7 @@ export async function deleteInvoice(id: string, userId?: string): Promise<void> 
   if (!userId) {
     const invoices = getLocalInvoices();
     const filtered = invoices.filter(inv => inv.id !== id);
-    localStorage.setItem('invoices', JSON.stringify(filtered));
+    localStorage.setItem('sk_free_invoices', JSON.stringify(filtered));
     return;
   }
 
@@ -131,23 +162,38 @@ export async function deleteInvoice(id: string, userId?: string): Promise<void> 
 // TEMPLATES
 // ============================================================================
 
+const TEMPLATE_SELECT = 'id, user_id, template_name, settings_json, created_at, updated_at';
+
 export async function saveTemplate(
-  template: SavedTemplate,
+  name: string,
+  settings: Partial<InvoiceData>,
   userId?: string
 ): Promise<SavedTemplate | null> {
+  const template: Omit<SavedTemplate, 'id' | 'created_at' | 'updated_at'> = {
+    user_id: userId || 'local',
+    template_name: name,
+    settings_json: settings,
+  };
+
   // FREE: localStorage
   if (!userId) {
     const templates = getLocalTemplates();
-    templates.push(template);
-    localStorage.setItem('templates', JSON.stringify(templates));
-    return template;
+    const saved: SavedTemplate = {
+      ...template,
+      id: `local_${Date.now()}`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    templates.unshift(saved);
+    localStorage.setItem('sk_templates', JSON.stringify(templates.slice(0, 20)));
+    return saved;
   }
 
   // PRO: Supabase
   const { data, error } = await supabase
     .from('saved_templates')
     .insert(template)
-    .select()
+    .select(TEMPLATE_SELECT)
     .single();
 
   if (error) throw error;
@@ -163,7 +209,7 @@ export async function getTemplates(userId?: string): Promise<SavedTemplate[]> {
   // PRO: Supabase
   const { data, error } = await supabase
     .from('saved_templates')
-    .select('*')
+    .select(TEMPLATE_SELECT)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -176,7 +222,7 @@ export async function deleteTemplate(id: string, userId?: string): Promise<void>
   if (!userId) {
     const templates = getLocalTemplates();
     const filtered = templates.filter(t => t.id !== id);
-    localStorage.setItem('templates', JSON.stringify(filtered));
+    localStorage.setItem('sk_templates', JSON.stringify(filtered));
     return;
   }
 
@@ -194,87 +240,69 @@ export async function deleteTemplate(id: string, userId?: string): Promise<void>
 // COMPANY PROFILE
 // ============================================================================
 
+const PROFILE_SELECT = 'id, user_id, company_name, email, phone, address, city, state, pin, gstin, pan, logo_url, created_at, updated_at';
+
 export async function saveCompanyProfile(
   profile: Omit<CompanyProfile, 'id' | 'created_at' | 'updated_at'>,
   userId?: string
 ): Promise<CompanyProfile | null> {
   // FREE: localStorage
   if (!userId) {
-    const profile_data = { ...profile, id: 'local', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
-    localStorage.setItem('company_profile', JSON.stringify(profile_data));
-    return profile_data as CompanyProfile;
+    const saved = {
+      ...profile,
+      id: 'local',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    } as CompanyProfile;
+    localStorage.setItem('sk_company_profile', JSON.stringify(saved));
+    return saved;
   }
 
-  // PRO: Supabase
-  const { data: existing } = await supabase
+  // PRO: Supabase — upsert (insert or update)
+  const { data, error } = await supabase
     .from('company_profiles')
-    .select('*')
-    .eq('user_id', userId)
+    .upsert(
+      { ...profile, user_id: userId },
+      { onConflict: 'user_id' }
+    )
+    .select(PROFILE_SELECT)
     .single();
 
-  if (existing) {
-    const { data, error } = await supabase
-      .from('company_profiles')
-      .update(profile)
-      .eq('user_id', userId)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  } else {
-    const { data, error } = await supabase
-      .from('company_profiles')
-      .insert({ ...profile, user_id: userId })
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  }
+  if (error) throw error;
+  return data;
 }
 
 export async function getCompanyProfile(userId?: string): Promise<CompanyProfile | null> {
   // FREE: localStorage
   if (!userId) {
-    const profile = localStorage.getItem('company_profile');
-    return profile ? JSON.parse(profile) : null;
+    try {
+      const profile = localStorage.getItem('sk_company_profile');
+      return profile ? JSON.parse(profile) : null;
+    } catch {
+      return null;
+    }
   }
 
   // PRO: Supabase
   const { data, error } = await supabase
     .from('company_profiles')
-    .select('*')
+    .select(PROFILE_SELECT)
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') throw error;
+  if (error) throw error;
   return data || null;
 }
 
 // ============================================================================
-// LOCAL STORAGE HELPERS
-// ============================================================================
-
-function getLocalInvoices(): StoredInvoice[] {
-  if (typeof window === 'undefined') return [];
-  const data = localStorage.getItem('invoices');
-  return data ? JSON.parse(data) : [];
-}
-
-function getLocalTemplates(): SavedTemplate[] {
-  if (typeof window === 'undefined') return [];
-  const data = localStorage.getItem('templates');
-  return data ? JSON.parse(data) : [];
-}
-
-// ============================================================================
-// STORAGE UPLOAD
+// LOGO UPLOAD
 // ============================================================================
 
 export async function uploadLogo(
   file: File,
   userId?: string
 ): Promise<string | null> {
-  // FREE: Data URL
+  // FREE: Data URL (stored in localStorage via Zustand)
   if (!userId) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -285,11 +313,15 @@ export async function uploadLogo(
   }
 
   // PRO: Supabase Storage
-  const path = `company-logos/${userId}/${Date.now()}_${file.name}`;
+  const ext = file.name.split('.').pop() || 'png';
+  const path = `company-logos/${userId}/${Date.now()}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from('invoices')
-    .upload(path, file, { upsert: true });
+    .upload(path, file, {
+      upsert: true,
+      contentType: file.type,
+    });
 
   if (uploadError) throw uploadError;
 
@@ -298,16 +330,43 @@ export async function uploadLogo(
 }
 
 export async function deleteLogo(logoUrl: string, userId?: string): Promise<void> {
-  // FREE: Nothing to do
+  // FREE: Nothing to do (data URLs don't need cleanup)
   if (!userId || logoUrl.startsWith('data:')) return;
 
   // PRO: Delete from Supabase Storage
-  const path = logoUrl.split('/').pop();
-  if (!path) return;
+  try {
+    const url = new URL(logoUrl);
+    const pathMatch = url.pathname.match(/company-logos\/.+/);
+    if (!pathMatch) return;
 
-  const { error } = await supabase.storage
-    .from('invoices')
-    .remove([`company-logos/${userId}/${path}`]);
+    const { error } = await supabase.storage
+      .from('invoices')
+      .remove([pathMatch[0]]);
 
-  if (error) throw error;
+    if (error) console.warn('Failed to delete logo:', error);
+  } catch {
+    // Non-critical, don't throw
+  }
+}
+
+// ============================================================================
+// LOCAL STORAGE HELPERS
+// ============================================================================
+
+function getLocalInvoices(): StoredInvoice[] {
+  try {
+    const data = localStorage.getItem('sk_free_invoices');
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+function getLocalTemplates(): SavedTemplate[] {
+  try {
+    const data = localStorage.getItem('sk_templates');
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
 }

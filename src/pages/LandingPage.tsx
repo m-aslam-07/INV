@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Navbar } from '../components/landing/Navbar';
 import { Footer } from '../components/landing/Footer';
+import { LoginModal } from '../components/auth/LoginModal';
+import { useAuthStore } from '../hooks/useAuthStore';
 import {
   Code2, Palette, Camera, Building2, PenTool, TrendingUp, GraduationCap, Stethoscope, Hammer, Calculator,
   Receipt, Smartphone, FileText, Star, ChevronDown, ChevronUp, Zap, Languages, QrCode, Layout, Eye, UserX,
@@ -50,6 +52,8 @@ const faqs = [
 
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const { user } = useAuthStore();
+  const upgradeLink = user ? '/upgrade' : '/login';
 
   return (
     <div className="bg-white min-h-screen">
@@ -193,7 +197,7 @@ export default function LandingPage() {
               <ul className="space-y-2 mb-6 text-sm text-gray-600">
                 <li>✓ Everything in Free</li><li>✓ Logo upload</li><li>✓ Shareable link</li><li>✓ UPI QR code</li><li>✓ Invoice history</li>
               </ul>
-              <a href="https://strikin.lemonsqueezy.com/checkout" className="block text-center py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Upgrade to Pro</a>
+              <Link to={upgradeLink} state={!user ? { from: { pathname: '/upgrade' } } : undefined} className="block text-center py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Upgrade to Pro</Link>
             </div>
             <div className="bg-white border border-gray-100 rounded-xl p-6">
               <h3 className="font-semibold text-gray-900 mb-1">Annual</h3>
@@ -202,7 +206,7 @@ export default function LandingPage() {
               <ul className="space-y-2 mb-6 text-sm text-gray-600">
                 <li>✓ Everything in Pro</li><li>✓ Priority support</li><li>✓ Best value</li>
               </ul>
-              <a href="https://strikin.lemonsqueezy.com/checkout" className="block text-center py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Get annual</a>
+              <Link to={upgradeLink} state={!user ? { from: { pathname: '/upgrade' } } : undefined} className="block text-center py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Get annual</Link>
             </div>
           </div>
         </div>
@@ -239,6 +243,7 @@ export default function LandingPage() {
       </section>
 
       <Footer />
+      <LoginModal />
     </div>
   );
 }
