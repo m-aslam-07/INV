@@ -5,10 +5,11 @@
  * 1. Client calls /api/payment/razorpay-create-order to get order_id
  * 2. Client opens Razorpay checkout with order_id
  * 3. On success, client calls /api/payment/razorpay-verify with payment details
- * 4. Server verifies signature and updates user plan to 'pro'
+ * 4. Server verifies signature; entitlement is finalized via webhook
  */
 
 import { env } from '../lib/env';
+import { supabase } from '../lib/supabase/client';
 
 declare global {
   interface Window {
@@ -17,10 +18,8 @@ declare global {
 }
 
 interface RazorpayOptions {
-  amount: number; // in paise (₹199 = 19900)
+  amount: number; // in paise
   currency: string;
-  userId: string;
-  userEmail: string;
   planType: 'monthly' | 'annual';
   onSuccess: (response: RazorpaySuccessResponse) => void;
   onError: (error: any) => void;
@@ -52,35 +51,75 @@ function loadRazorpayScript(): Promise<void> {
   });
 }
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  if (!token) {
+    throw new Error('Session expired. Please sign in again.');
+  }
+
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 /**
  * Create an order on the backend and get order_id
  */
-async function createOrder(amount: number, currency: string, userId: string, planType: string): Promise<{ orderId: string }> {
+async function createOrder(planType: string): Promise<{ orderId: string }> {
+  const headers = await getAuthHeaders();
+
   const response = await fetch('/api/payment/razorpay-create-order', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ amount, currency, userId, planType }),
+    headers,
+    body: JSON.stringify({ planType }),
   });
 
   if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error || 'Failed to create Razorpay order');
+    const raw = await response.text().catch(() => '');
+    let errData: any = {};
+    try {
+      errData = raw ? JSON.parse(raw) : {};
+    } catch {
+      errData = { error: raw };
+    }
+
+    if (import.meta.env.DEV) {
+      console.error('Razorpay create-order failed', {
+        status: response.status,
+        statusText: response.statusText,
+        response: errData,
+      });
+    }
+
+    if (response.status === 404) {
+      throw new Error('Payment API route not found. For localhost, run the backend/serverless runtime that serves /api routes.');
+    }
+
+    throw new Error(errData.error || errData.details || 'Failed to create Razorpay order');
   }
 
-  return response.json();
+  const result = await response.json().catch(() => ({}));
+  if (!result?.orderId) {
+    throw new Error('Order ID was not returned by payment API');
+  }
+  return result;
 }
 
 /**
  * Verify payment on the backend
  */
 export async function verifyRazorpayPayment(
-  paymentData: RazorpaySuccessResponse,
-  userId: string
+  paymentData: RazorpaySuccessResponse
 ): Promise<{ success: boolean }> {
+  const headers = await getAuthHeaders();
+
   const response = await fetch('/api/payment/razorpay-verify', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...paymentData, userId }),
+    headers,
+    body: JSON.stringify(paymentData),
   });
 
   if (!response.ok) {
@@ -95,14 +134,20 @@ export async function verifyRazorpayPayment(
  * Open the Razorpay checkout modal
  */
 export async function openRazorpayCheckout(options: RazorpayOptions): Promise<void> {
-  const { amount, currency, userId, userEmail, planType, onSuccess, onError, onDismiss } = options;
+  const { amount, currency, planType, onSuccess, onError, onDismiss } = options;
+
+  const { data } = await supabase.auth.getSession();
+  const userEmail = data.session?.user?.email || '';
 
   try {
     // Load SDK
     await loadRazorpayScript();
+    if (!window.Razorpay) {
+      throw new Error('Razorpay SDK did not initialize correctly');
+    }
 
     // Create order
-    const { orderId } = await createOrder(amount, currency, userId, planType);
+    const { orderId } = await createOrder(planType);
 
     const razorpayKeyId = env.RAZORPAY_KEY_ID;
     if (!razorpayKeyId) {
@@ -125,7 +170,7 @@ export async function openRazorpayCheckout(options: RazorpayOptions): Promise<vo
       },
       handler: async (response: RazorpaySuccessResponse) => {
         try {
-          await verifyRazorpayPayment(response, userId);
+          await verifyRazorpayPayment(response);
           onSuccess(response);
         } catch (err) {
           onError(err);
@@ -144,6 +189,9 @@ export async function openRazorpayCheckout(options: RazorpayOptions): Promise<vo
 
     rzp.open();
   } catch (err) {
+    if (import.meta.env.DEV) {
+      console.error('openRazorpayCheckout failed', err);
+    }
     onError(err);
   }
 }

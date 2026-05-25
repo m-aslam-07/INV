@@ -1,7 +1,6 @@
 import { useInvoiceStore } from '../../../hooks/useInvoiceStore';
 
 const BRAND_COLORS = ['#2563EB', '#16a34a', '#7c3aed', '#ea580c', '#e11d48', '#0d9488', '#6b7280', '#000000'];
-const FONTS = ['Inter', 'Poppins', 'DM Sans', 'Playfair Display', 'Space Grotesk'];
 
 export function StepDesign() {
   const store = useInvoiceStore();
@@ -20,18 +19,6 @@ export function StepDesign() {
             <button key={c} onClick={() => store.updateStyle({ brandColor: c })}
               className={`w-6 h-6 rounded-full border-2 transition-all ${store.style.brandColor === c ? 'border-gray-900 scale-110' : 'border-transparent'}`}
               style={{ backgroundColor: c }} />
-          ))}
-        </div>
-      </div>
-
-      {/* Font */}
-      <div>
-        <p className="text-xs text-gray-400 mb-2">Font</p>
-        <div className="flex gap-2 flex-wrap">
-          {FONTS.map(f => (
-            <button key={f} onClick={() => store.updateStyle({ fontFamily: f })}
-              className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${store.style.fontFamily === f ? 'bg-blue-50 text-blue-700 border-blue-200' : 'text-gray-500 border-gray-200'}`}
-              style={{ fontFamily: f }}>Aa</button>
           ))}
         </div>
       </div>

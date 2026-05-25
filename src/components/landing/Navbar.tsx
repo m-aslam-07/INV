@@ -54,6 +54,11 @@ export function Navbar() {
           <Link to="/app" className="bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg px-4 py-2 font-medium transition-colors hidden sm:block">
             {user ? 'Go to App →' : 'Create free invoice →'}
           </Link>
+          {user && (
+            <div className="hidden sm:flex items-center pl-3">
+              <span className="text-sm text-gray-700 font-medium truncate max-w-[180px]" title={user.email}>{user.email}</span>
+            </div>
+          )}
           <button className="md:hidden p-1.5" onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -70,6 +75,9 @@ export function Navbar() {
             )
           ))}
           <div className="border-t border-gray-100 my-2 pt-2" />
+          {user && (
+            <div className="text-sm text-gray-700 py-2">{user.email}</div>
+          )}
           {user ? (
             <button onClick={() => { signOut(); setMenuOpen(false); }} className="w-full text-left text-sm text-gray-600 py-2 flex items-center gap-2">
               <LogOut size={16} /> Sign out

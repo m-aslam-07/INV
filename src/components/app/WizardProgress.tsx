@@ -5,7 +5,6 @@ const STEPS = [
   { num: 2, label: 'Details' },
   { num: 3, label: 'Line Items' },
   { num: 4, label: 'Tax & Discount' },
-  { num: 5, label: 'Design & Export' },
 ];
 
 interface Props { current: number; onChange: (step: number) => void; }
@@ -16,10 +15,10 @@ export function WizardProgress({ current, onChange }: Props) {
       <div className="flex items-center justify-between relative">
         {/* Connector line */}
         <div className="absolute top-4 left-[10%] right-[10%] h-0.5 bg-gray-100 z-0" />
-        <div
-          className="absolute top-4 left-[10%] h-0.5 bg-blue-500 z-0 transition-all duration-500 ease-out"
-          style={{ width: `${((current - 1) / 4) * 80}%` }}
-        />
+          <div
+            className="absolute top-4 left-[10%] h-0.5 bg-blue-500 z-0 transition-all duration-500 ease-out"
+            style={{ width: `${((current - 1) / 3) * 80}%` }}
+          />
         {STEPS.map((s) => {
           const done = current > s.num;
           const active = current === s.num;

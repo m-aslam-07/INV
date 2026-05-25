@@ -37,6 +37,24 @@ body {
 }
 
 /* Invoice preview print styles */
+/* Use a CSS variable for logo size so preview and PDF can be resized */
+#invoice-preview-target img[alt="Logo"],
+#invoice-preview-target img[alt="Business logo"] {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  border-radius: 12px !important;
+  padding: 6px 10px !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+  object-fit: contain !important;
+  height: var(--sk-logo-size, 64px) !important;
+  width: auto !important;
+  display: block !important;
+}
+
+#invoice-preview-target img[alt="Logo"] {
+  margin-bottom: 12px !important;
+}
+
 @media print {
   body * {
     visibility: hidden;

@@ -1,5 +1,6 @@
 import { useInvoiceStore } from '../../../hooks/useInvoiceStore';
 import { getAllTemplates } from '../../invoice/templateRegistry';
+import { StepDesign } from './StepDesign';
 
 const DOC_TYPES = [
   { key: 'invoice', label: 'Invoice' },
@@ -37,6 +38,10 @@ export function StepProfession() {
             </button>
           ))}
         </div>
+      </div>
+      {/* Bring Design Customiser into Template step */}
+      <div className="pt-4">
+        <StepDesign />
       </div>
     </div>
   );

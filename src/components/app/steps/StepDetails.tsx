@@ -1,10 +1,13 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useInvoiceStore } from '../../../hooks/useInvoiceStore';
+import { useAuthStore } from '../../../hooks/useAuthStore';
 import { useCompanyProfile } from '../../../hooks/useCompanyProfile';
 import { validateGSTIN } from '../../../utils/gstinValidator';
 import { stateFromGSTIN } from '../../../utils/gstinStateCodes';
 import { ProGated } from '../ProGated';
-import { Upload, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, Check, AlertCircle, Loader2, Trash2, ImagePlus } from 'lucide-react';
+import { deleteLogo } from '../../../lib/storage';
+import { useToastStore } from '../../../hooks/useToastStore';
 
 const inputCls = 'border border-gray-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all duration-150 bg-white';
 const labelCls = 'text-xs font-medium text-gray-400 uppercase tracking-wider mb-3';
@@ -16,10 +19,22 @@ const CURRENCIES = [
 
 export function StepDetails() {
   const store = useInvoiceStore();
-  const { uploadLogoFile } = useCompanyProfile();
+  const { user } = useAuthStore();
+  const { uploadLogoFile, saveProfile } = useCompanyProfile();
+  const { addToast } = useToastStore();
   const [logoUploading, setLogoUploading] = useState(false);
+  const [logoRemoving, setLogoRemoving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const bizGstinValid = validateGSTIN(store.business.gstin);
   const clientGstinValid = validateGSTIN(store.client.gstin);
+
+  const syncCompanyProfile = useCallback(async () => {
+    try {
+      await saveProfile();
+    } catch (err) {
+      console.error('Profile sync failed:', err);
+    }
+  }, [saveProfile]);
 
   const handleLogoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -27,13 +42,39 @@ export function StepDetails() {
     setLogoUploading(true);
     try {
       const url = await uploadLogoFile(file);
-      if (url) store.updateBusiness({ logoUrl: url });
+      if (url) {
+        store.updateBusiness({ logoUrl: url });
+        await syncCompanyProfile();
+        addToast('Logo uploaded', 'success');
+      } else {
+        addToast('Logo upload failed', 'error');
+      }
     } catch (err) {
       console.error('Logo upload failed:', err);
+      const msg = err instanceof Error ? err.message : 'Upload failed';
+      addToast(`Logo upload failed: ${msg}`, 'error');
     } finally {
       setLogoUploading(false);
+      e.target.value = '';
     }
-  }, [store, uploadLogoFile]);
+  }, [store, uploadLogoFile, syncCompanyProfile]);
+
+  const handleLogoRemove = useCallback(async () => {
+    if (!store.business.logoUrl) return;
+    setLogoRemoving(true);
+    try {
+      await deleteLogo(store.business.logoUrl, user?.id);
+      store.updateBusiness({ logoUrl: null });
+      await syncCompanyProfile();
+      addToast('Logo removed', 'success');
+    } catch (err) {
+      console.error('Logo removal failed:', err);
+      const msg = err instanceof Error ? err.message : 'Remove failed';
+      addToast(`Logo removal failed: ${msg}`, 'error');
+    } finally {
+      setLogoRemoving(false);
+    }
+  }, [store, syncCompanyProfile, user?.id]);
 
   const setDueFromTerms = (days: number) => {
     const d = new Date(store.document.date);
@@ -76,16 +117,53 @@ export function StepDetails() {
           </div>
           <input className={inputCls} placeholder="PAN" value={store.business.pan} onChange={e => store.updateBusiness({ pan: e.target.value.toUpperCase() })} />
           <ProGated feature="Logo upload">
-            <label className={`border-2 border-dashed border-gray-200 rounded-lg p-4 text-center cursor-pointer block hover:border-blue-300 transition-colors ${logoUploading ? 'opacity-60 pointer-events-none' : ''}`}>
-              {logoUploading ? (
-                <div className="text-blue-500 text-sm"><Loader2 size={20} className="mx-auto mb-1 animate-spin" />Uploading...</div>
-              ) : store.business.logoUrl ? (
-                <img src={store.business.logoUrl} alt="Logo" className="h-12 mx-auto object-contain" />
-              ) : (
-                <div className="text-gray-400 text-sm"><Upload size={20} className="mx-auto mb-1" />Upload logo</div>
-              )}
-              <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-            </label>
+            <div className={`border-2 border-dashed border-gray-200 rounded-lg p-4 transition-colors ${logoUploading || logoRemoving ? 'opacity-70' : ''}`}>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={logoUploading || logoRemoving}
+                  className="w-full flex items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 hover:border-blue-300 hover:bg-blue-50/40 transition-colors disabled:cursor-not-allowed"
+                >
+                  {logoUploading ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin text-blue-500" />
+                      Uploading logo...
+                    </>
+                  ) : store.business.logoUrl ? (
+                    <>
+                      <img src={store.business.logoUrl} alt="Uploaded logo" className="h-12 w-12 rounded-md object-contain bg-white border border-gray-100 p-1" />
+                      <span className="flex-1 text-left">
+                        <span className="block text-gray-900">Logo uploaded</span>
+                        <span className="block text-xs text-gray-400">Click to replace the current logo</span>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                        <ImagePlus size={18} />
+                      </div>
+                      <span className="flex-1 text-left">
+                        <span className="block text-gray-900">Upload logo</span>
+                        <span className="block text-xs text-gray-400">Shown in the live preview and PDF</span>
+                      </span>
+                    </>
+                  )}
+                </button>
+                {store.business.logoUrl && (
+                  <button
+                    type="button"
+                    onClick={handleLogoRemove}
+                    disabled={logoUploading || logoRemoving}
+                    className="inline-flex h-11 items-center justify-center rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-600 hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-colors disabled:cursor-not-allowed"
+                    title="Remove logo"
+                  >
+                    {logoRemoving ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                  </button>
+                )}
+              </div>
+            </div>
           </ProGated>
         </div>
       </div>

@@ -55,13 +55,9 @@ export function useTemplateStorage(): UseTemplateStorageReturn {
     setError(null);
     try {
       const state = invoiceStore.getFullState();
-      // Only store style-related settings, not invoice-specific data
+      // Only store template-specific settings; invoice data stays local.
       const settings: Record<string, unknown> = {
         style: state.style,
-        business: {
-          name: state.business.name,
-          logoUrl: state.business.logoUrl,
-        },
         profession: state.profession,
       };
 

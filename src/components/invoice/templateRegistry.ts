@@ -55,8 +55,8 @@ const AgencyTemplate = lazy(() => import('./marketer/AgencyTemplate'));
 
 export const ALL_TEMPLATES: TemplateInfo[] = [
   // Developer
-  { key: 'terminal', label: 'Terminal', description: 'Dark header, monospace, code-like structure', component: TerminalTemplate },
-  { key: 'blueprint', label: 'Dev Blueprint', description: 'Grid lines, technical spec document feel', component: DevBlueprintTemplate },
+  { key: 'concrete', label: 'Concrete', description: 'Grey tones, structured, no-nonsense', component: ConcreteTemplate },
+  { key: 'manuscript', label: 'Manuscript', description: 'Serif font, editorial, literary', component: ManuscriptTemplate },
   { key: 'startup', label: 'Startup', description: 'Modern, blue accent, minimal YC-style', component: StartupTemplate },
 
   // Designer
@@ -72,12 +72,12 @@ export const ALL_TEMPLATES: TemplateInfo[] = [
   // Architect
   { key: 'arch-blueprint', label: 'Arch Blueprint', description: 'Grid background, navy + white', component: ArchBlueprintTemplate },
   { key: 'render', label: 'Render', description: 'Clean, wide margins, premium feel', component: RenderTemplate },
-  { key: 'concrete', label: 'Concrete', description: 'Grey tones, structured, no-nonsense', component: ConcreteTemplate },
+  { key: 'terminal', label: 'Terminal', description: 'Dark header, monospace, code-like structure', component: TerminalTemplate },
 
   // Writer
-  { key: 'manuscript', label: 'Manuscript', description: 'Serif font, editorial, literary', component: ManuscriptTemplate },
   { key: 'byline', label: 'Byline', description: 'Newspaper column, typographic hierarchy', component: BylineTemplate },
   { key: 'digital', label: 'Digital', description: 'Modern, rounded, content agency', component: DigitalTemplate },
+  { key: 'blueprint', label: 'Dev Blueprint', description: 'Grid lines, technical spec document feel', component: DevBlueprintTemplate },
 
   // Contractor
   { key: 'running-bill', label: 'Running Bill', description: 'Table-heavy, formal RA bill', component: RunningBillTemplate },
@@ -100,7 +100,7 @@ export function getAllTemplates(): TemplateInfo[] {
 }
 
 export function getDefaultTemplateKey(): string {
-  return ALL_TEMPLATES[0].key;
+  return 'concrete';
 }
 
 export function resolveTemplate(templateKey: string): ComponentType<TemplateProps> {

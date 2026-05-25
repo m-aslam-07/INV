@@ -9,7 +9,6 @@ import { StepProfession } from './steps/StepProfession';
 import { StepDetails } from './steps/StepDetails';
 import { StepLineItems } from './steps/StepLineItems';
 import { StepTaxDiscount } from './steps/StepTaxDiscount';
-import { StepDesign } from './steps/StepDesign';
 import {
   ArrowLeft, ArrowRight, Download, Share2, Clock, Trash2,
   Loader2, Check,
@@ -31,7 +30,7 @@ export function FormPanel({ onDownload, downloading, downloadSuccess, onShowHist
   const { addToast } = useToastStore();
 
   const goNext = () => {
-    if (step < 5) { setSlideDir('right'); setStep(s => s + 1); }
+    if (step < 4) { setSlideDir('right'); setStep(s => s + 1); }
   };
   const goBack = () => {
     if (step > 1) { setSlideDir('left'); setStep(s => s - 1); }
@@ -60,7 +59,6 @@ export function FormPanel({ onDownload, downloading, downloadSuccess, onShowHist
       case 2: return <StepDetails />;
       case 3: return <StepLineItems />;
       case 4: return <StepTaxDiscount />;
-      case 5: return <StepDesign />;
       default: return null;
     }
   };
@@ -80,7 +78,7 @@ export function FormPanel({ onDownload, downloading, downloadSuccess, onShowHist
 
       {/* Bottom bar */}
       <div className="sticky bottom-0 bg-white border-t border-gray-100 px-5 py-3 flex-shrink-0">
-        {step < 5 ? (
+          {step < 4 ? (
           /* Steps 1–4: Back + Next */
           <div className="flex gap-3">
             {step > 1 ? (

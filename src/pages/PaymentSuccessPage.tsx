@@ -12,20 +12,43 @@ export default function PaymentSuccessPage() {
   const { refreshPlan, isPro, user } = useAuthStore();
 
   useEffect(() => {
-    // Refresh plan status from Supabase after payment
+    let active = true;
+    let attempts = 0;
+    const maxAttempts = 20;
+
     const refresh = async () => {
+      if (!active) return;
+
       try {
         await refreshPlan();
       } catch (e) {
         console.error('Failed to refresh plan:', e);
-      } finally {
+      }
+
+      attempts += 1;
+      const currentIsPro = useAuthStore.getState().isPro;
+
+      if (!active) return;
+      if (currentIsPro || attempts >= maxAttempts) {
         setRefreshing(false);
+        active = false;
       }
     };
 
-    // Give webhook a moment to process
-    const timer = setTimeout(refresh, 2000);
-    return () => clearTimeout(timer);
+    const interval = window.setInterval(() => {
+      void refresh();
+    }, 3000);
+
+    // Start soon after navigation so webhook has a moment to run.
+    const kickoff = window.setTimeout(() => {
+      void refresh();
+    }, 1500);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.clearTimeout(kickoff);
+    };
   }, [refreshPlan]);
 
   return (

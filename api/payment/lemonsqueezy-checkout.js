@@ -1,11 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+import { getAuthenticatedUser, setCorsHeaders } from './_auth';
 
 // Vercel serverless function to create LemonSqueezy checkout
 export default async function handler(req, res) {
   // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -16,14 +14,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { userId, userEmail, planType } = req.body;
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-    if (!userId || !userEmail || !planType) {
+    const { planType } = req.body;
+
+    if (!planType) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     const apiKey = process.env.LEMONSQUEEZY_API_KEY;
-    const storeId = process.env.VITE_LEMONSQUEEZY_STORE_ID;
+    const storeId = process.env.LEMONSQUEEZY_STORE_ID || process.env.VITE_LEMONSQUEEZY_STORE_ID;
 
     if (!apiKey || !storeId) {
       return res.status(500).json({ error: 'LemonSqueezy is not configured' });
@@ -39,7 +42,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'LemonSqueezy variant not configured' });
     }
 
-    const appUrl = process.env.VITE_APP_URL || 'http://localhost:5173';
+    const appUrl = process.env.APP_URL || process.env.VITE_APP_URL || 'http://localhost:5173';
 
     // Create checkout via LemonSqueezy API
     const checkoutRes = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
@@ -54,9 +57,9 @@ export default async function handler(req, res) {
           type: 'checkouts',
           attributes: {
             checkout_data: {
-              email: userEmail,
+              email: user.email,
               custom: {
-                user_id: userId,
+                user_id: user.id,
               },
             },
             checkout_options: {

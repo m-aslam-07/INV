@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './components/auth/AuthProvider';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -24,30 +23,43 @@ function Loading() {
   );
 }
 
-function AppWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthProvider>
-      <Suspense fallback={<Loading />}>{children}</Suspense>
-    </AuthProvider>
-  );
-}
-
 export const router = createBrowserRouter([
   // Public routes
-  { path: '/', element: <AppWrapper><LandingPage /></AppWrapper> },
-  { path: '/app', element: <AppWrapper><AppPage /></AppWrapper> },
-  { path: '/templates', element: <AppWrapper><TemplatesPage /></AppWrapper> },
-  { path: '/pricing', element: <AppWrapper><PricingPage /></AppWrapper> },
-  { path: '/blog', element: <AppWrapper><BlogPage /></AppWrapper> },
-  { path: '/legal/privacy', element: <AppWrapper><PrivacyPage /></AppWrapper> },
-  { path: '/legal/terms', element: <AppWrapper><TermsPage /></AppWrapper> },
+  { path: '/', element: <Suspense fallback={<Loading />}><LandingPage /></Suspense> },
+  { path: '/app', element: <Suspense fallback={<Loading />}><AppPage /></Suspense> },
+  { path: '/templates', element: <Suspense fallback={<Loading />}><TemplatesPage /></Suspense> },
+  { path: '/pricing', element: <Suspense fallback={<Loading />}><PricingPage /></Suspense> },
+  { path: '/blog', element: <Suspense fallback={<Loading />}><BlogPage /></Suspense> },
+  { path: '/legal/privacy', element: <Suspense fallback={<Loading />}><PrivacyPage /></Suspense> },
+  { path: '/legal/terms', element: <Suspense fallback={<Loading />}><TermsPage /></Suspense> },
 
   // Auth routes
-  { path: '/login', element: <AppWrapper><LoginPage /></AppWrapper> },
-  { path: '/signup', element: <AppWrapper><SignupPage /></AppWrapper> },
+  { path: '/login', element: <Suspense fallback={<Loading />}><LoginPage /></Suspense> },
+  { path: '/signup', element: <Suspense fallback={<Loading />}><SignupPage /></Suspense> },
 
   // Payment routes
-  { path: '/upgrade', element: <AppWrapper><UpgradePage /></AppWrapper> },
-  { path: '/payment-success', element: <AppWrapper><PaymentSuccessPage /></AppWrapper> },
-  { path: '/payment-cancel', element: <AppWrapper><PaymentCancelPage /></AppWrapper> },
+  {
+    path: '/upgrade',
+    element: (
+      <ProtectedRoute requirePro={false}>
+        <Suspense fallback={<Loading />}><UpgradePage /></Suspense>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/payment-success',
+    element: (
+      <ProtectedRoute requirePro={false}>
+        <Suspense fallback={<Loading />}><PaymentSuccessPage /></Suspense>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/payment-cancel',
+    element: (
+      <ProtectedRoute requirePro={false}>
+        <Suspense fallback={<Loading />}><PaymentCancelPage /></Suspense>
+      </ProtectedRoute>
+    ),
+  },
 ]);

@@ -1,12 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { createSupabaseServiceClient, getAuthenticatedUser, setCorsHeaders } from './_auth';
 
 // Vercel serverless function for Razorpay payment verification
 export default async function handler(req, res) {
   // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  setCorsHeaders(req, res);
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -17,14 +15,18 @@ export default async function handler(req, res) {
   }
 
   try {
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const {
       razorpay_payment_id,
       razorpay_order_id,
       razorpay_signature,
-      userId,
     } = req.body;
 
-    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !userId) {
+    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -45,45 +47,33 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid payment signature' });
     }
 
-    // Signature verified — update user plan in Supabase
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabase = createSupabaseServiceClient();
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Supabase not configured for server-side operations');
-      return res.status(500).json({ error: 'Server configuration error' });
+    const { data: paymentLog, error: paymentLogError } = await supabase
+      .from('payment_logs')
+      .select('id, user_id')
+      .eq('provider', 'razorpay')
+      .eq('order_id', razorpay_order_id)
+      .maybeSingle();
+
+    if (paymentLogError || !paymentLog) {
+      return res.status(400).json({ error: 'Unknown order reference' });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Update user plan to 'pro'
-    const { error: updateError } = await supabase
-      .from('users')
-      .upsert(
-        {
-          id: userId,
-          plan: 'pro',
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'id' }
-      );
-
-    if (updateError) {
-      console.error('Failed to update user plan:', updateError);
-      return res.status(500).json({ error: 'Failed to update user plan' });
+    if (paymentLog.user_id !== user.id) {
+      return res.status(403).json({ error: 'Order does not belong to authenticated user' });
     }
 
-    // Log the payment
-    await supabase.from('payment_logs').insert({
-      user_id: userId,
-      provider: 'razorpay',
+    await supabase
+      .from('payment_logs')
+      .update({
       payment_id: razorpay_payment_id,
-      order_id: razorpay_order_id,
-      status: 'verified',
-      created_at: new Date().toISOString(),
-    }).catch(() => { /* payment_logs table might not exist yet */ });
+      status: 'client_verified',
+      })
+      .eq('id', paymentLog.id);
 
-    return res.status(200).json({ success: true });
+    // Entitlement is upgraded only by verified server-side webhook.
+    return res.status(200).json({ success: true, pendingWebhook: true });
   } catch (error) {
     console.error('Razorpay verification error:', error);
     return res.status(500).json({ error: 'Internal server error' });

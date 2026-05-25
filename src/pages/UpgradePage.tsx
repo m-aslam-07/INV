@@ -4,7 +4,7 @@ import { Navbar } from '../components/landing/Navbar';
 import { Footer } from '../components/landing/Footer';
 import { useAuthStore } from '../hooks/useAuthStore';
 import { openRazorpayCheckout } from '../services/razorpay';
-import { redirectToLemonSqueezyCheckout, buildDirectCheckoutUrl } from '../services/lemonsqueezy';
+import { redirectToLemonSqueezyCheckout } from '../services/lemonsqueezy';
 import {
   Check, Sparkles, CreditCard, Globe, IndianRupee, Loader2, Shield,
   ArrowRight, Crown, Zap
@@ -14,8 +14,8 @@ type PlanPeriod = 'monthly' | 'annual';
 type PaymentProvider = 'razorpay' | 'lemonsqueezy';
 
 const PRICING = {
-  monthly: { inr: 199, usd: 5, paise: 19900 },
-  annual: { inr: 1499, usd: 49, paise: 149900 },
+  monthly: { inr: 149, usd: 4, paise: 14900 },
+  annual: { inr: 1499, usd: 39, paise: 149900 },
 };
 
 const PRO_FEATURES = [
@@ -105,8 +105,6 @@ export default function UpgradePage() {
         await openRazorpayCheckout({
           amount: PRICING[period].paise,
           currency: 'INR',
-          userId: user.id,
-          userEmail: user.email,
           planType: period,
           onSuccess: () => {
             navigate('/payment-success?provider=razorpay');
@@ -122,18 +120,10 @@ export default function UpgradePage() {
       } else {
         try {
           await redirectToLemonSqueezyCheckout({
-            userId: user.id,
-            userEmail: user.email,
             planType: period,
           });
         } catch {
-          // Fallback to direct checkout URL if API is unavailable
-          const url = buildDirectCheckoutUrl({
-            userId: user.id,
-            userEmail: user.email,
-            planType: period,
-          });
-          window.location.href = url;
+          throw new Error('Unable to start checkout. Please try again.');
         }
       }
     } catch (err: any) {
@@ -176,7 +166,7 @@ export default function UpgradePage() {
               >
                 Monthly
               </button>
-              <button
+                <button
                 onClick={() => setPeriod('annual')}
                 className={`px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
                   period === 'annual'
@@ -186,7 +176,11 @@ export default function UpgradePage() {
               >
                 Annual
                 <span className="bg-green-100 text-green-700 text-xs px-1.5 py-0.5 rounded-full font-medium">
-                  Save {provider === 'razorpay' ? '₹889' : '$11'}
+                  {(() => {
+                    const inrSave = PRICING.monthly.inr * 12 - PRICING.annual.inr;
+                    const usdSave = PRICING.monthly.usd * 12 - PRICING.annual.usd;
+                    return `Save ${provider === 'razorpay' ? `₹${inrSave}` : `$${usdSave}`}`;
+                  })()}
                 </span>
               </button>
             </div>
@@ -271,7 +265,11 @@ export default function UpgradePage() {
                 </p>
                 {period === 'annual' && (
                   <p className="text-xs text-green-600 mt-1 font-medium">
-                    Best value — save {provider === 'razorpay' ? '₹889' : '$11'} per year
+                    {(() => {
+                      const inrSave = PRICING.monthly.inr * 12 - PRICING.annual.inr;
+                      const usdSave = PRICING.monthly.usd * 12 - PRICING.annual.usd;
+                      return `Best value — save ${provider === 'razorpay' ? `₹${inrSave}` : `$${usdSave}`} per year`;
+                    })()}
                   </p>
                 )}
               </div>

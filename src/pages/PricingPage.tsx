@@ -62,7 +62,7 @@ export default function PricingPage() {
             <div className="bg-white border-2 border-blue-600 rounded-2xl p-6 relative">
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium">Most popular</span>
               <h3 className="font-semibold text-gray-900 mb-1">Pro</h3>
-              <p className="text-4xl font-bold text-gray-900 mb-1">₹199<span className="text-base font-normal text-gray-400">/mo</span></p>
+              <p className="text-4xl font-bold text-gray-900 mb-1">₹149<span className="text-base font-normal text-gray-400">/mo</span></p>
               <p className="text-sm text-gray-400 mb-6">Billed monthly</p>
               <ul className="space-y-2.5 mb-6">
                 {features.map(f => (
@@ -91,7 +91,7 @@ export default function PricingPage() {
               <h3 className="font-semibold text-gray-900 mb-1">Annual</h3>
               <p className="text-4xl font-bold text-gray-900 mb-1">₹1,499<span className="text-base font-normal text-gray-400">/yr</span></p>
               <div className="mb-6">
-                <span className="inline-block bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">Save ₹889/yr</span>
+                <span className="inline-block bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">Save ₹289/yr</span>
               </div>
               <ul className="space-y-2.5 mb-6">
                 {features.map(f => (

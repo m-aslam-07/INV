@@ -33,15 +33,7 @@ export async function getSubscription(userId: string) {
 }
 
 export async function updateUserPlan(userId: string, plan: 'free' | 'pro') {
-  const { data, error } = await supabase
-    .from('users')
-    .update({ plan })
-    .eq('id', userId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  throw new Error('Direct client-side plan updates are disabled. Use verified payment webhooks.');
 }
 
 // ============================================================================

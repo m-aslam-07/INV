@@ -2,8 +2,13 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../hooks/useAuthStore';
 import React from 'react';
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isPro, loading, openLoginModal } = useAuthStore();
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requirePro?: boolean;
+}
+
+export function ProtectedRoute({ children, requirePro = true }: ProtectedRouteProps) {
+  const { user, isPro, loading, openUpgradeModal } = useAuthStore();
   const location = useLocation();
 
   if (loading) {
@@ -14,12 +19,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user || !isPro) {
-    // Open login/upgrade modal and redirect home
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (requirePro && !isPro) {
     setTimeout(() => {
-      openLoginModal();
+      openUpgradeModal('Pro feature');
     }, 0);
-    return <Navigate to="/" state={{ from: location }} replace />;
+    return <Navigate to="/upgrade" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

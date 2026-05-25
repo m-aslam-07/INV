@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { X, Mail, Lock } from 'lucide-react';
 import { useAuthStore } from '../../hooks/useAuthStore';
+import { getAuthErrorMessage } from '../../lib/authErrors';
 
 export function LoginModal() {
   const { loginModalOpen, closeLoginModal, signIn } = useAuthStore();
@@ -20,7 +22,7 @@ export function LoginModal() {
       await signIn(email, password);
       closeLoginModal();
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -89,6 +91,19 @@ export function LoginModal() {
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
+
+          <div className="mt-5 text-center">
+            <p className="text-sm text-gray-500">
+              Don&apos;t have an account?{' '}
+              <Link
+                to="/signup"
+                onClick={closeLoginModal}
+                className="font-medium text-blue-600 hover:text-blue-700"
+              >
+                Sign up
+              </Link>
+            </p>
+          </div>
 
           <div className="mt-6 text-center text-xs text-gray-400">
             For demo: Use pro1232@gmail.com / proaccount123

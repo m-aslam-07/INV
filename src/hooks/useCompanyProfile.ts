@@ -65,18 +65,18 @@ export function useCompanyProfile(): UseCompanyProfileReturn {
     setLoading(true);
     setError(null);
     try {
-      const biz = invoiceStore.business;
+      const biz = useInvoiceStore.getState().business;
       const profileData: Omit<CompanyProfile, 'id' | 'created_at' | 'updated_at'> = {
         user_id: userId || 'local',
         company_name: biz.name,
-        email: biz.email,
-        phone: biz.phone,
+        email: '',
+        phone: '',
         address: biz.address1,
-        city: biz.city,
-        state: biz.state,
-        pin: biz.pin,
+        city: '',
+        state: '',
+        pin: '',
         gstin: biz.gstin,
-        pan: biz.pan,
+        pan: '',
         logo_url: biz.logoUrl,
       };
 
@@ -91,7 +91,7 @@ export function useCompanyProfile(): UseCompanyProfileReturn {
     } finally {
       setLoading(false);
     }
-  }, [invoiceStore, userId]);
+  }, [userId]);
 
   const uploadLogoFile = useCallback(async (file: File): Promise<string | null> => {
     setLoading(true);

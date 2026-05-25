@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from '../components/landing/Navbar';
 import { Footer } from '../components/landing/Footer';
 import { useAuthStore } from '../hooks/useAuthStore';
+import { getAuthErrorMessage } from '../lib/authErrors';
 import { Mail, Lock, Zap, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -26,7 +27,7 @@ export default function LoginPage() {
       await signIn(email, password);
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }

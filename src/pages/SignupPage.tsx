@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/landing/Navbar';
 import { Footer } from '../components/landing/Footer';
 import { useAuthStore } from '../hooks/useAuthStore';
+import { getAuthErrorMessage } from '../lib/authErrors';
 import { Mail, Lock, Zap, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
 
 export default function SignupPage() {
@@ -41,7 +42,7 @@ export default function SignupPage() {
         navigate('/app', { replace: true });
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to create account');
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }

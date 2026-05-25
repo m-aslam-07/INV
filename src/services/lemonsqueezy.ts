@@ -10,11 +10,24 @@
  */
 
 import { env } from '../lib/env';
+import { supabase } from '../lib/supabase/client';
 
 interface LemonSqueezyCheckoutOptions {
-  userId: string;
-  userEmail: string;
   planType: 'monthly' | 'annual';
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  if (!token) {
+    throw new Error('Session expired. Please sign in again.');
+  }
+
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
 }
 
 /**
@@ -23,12 +36,13 @@ interface LemonSqueezyCheckoutOptions {
 export async function createLemonSqueezyCheckout(
   options: LemonSqueezyCheckoutOptions
 ): Promise<string> {
-  const { userId, userEmail, planType } = options;
+  const { planType } = options;
+  const headers = await getAuthHeaders();
 
   const response = await fetch('/api/payment/lemonsqueezy-checkout', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, userEmail, planType }),
+    headers,
+    body: JSON.stringify({ planType }),
   });
 
   if (!response.ok) {
@@ -63,8 +77,7 @@ export function buildDirectCheckoutUrl(
   }
 
   const params = new URLSearchParams({
-    'checkout[email]': options.userEmail,
-    'checkout[custom][user_id]': options.userId,
+    'checkout[email]': '',
   });
 
   const successUrl = `${env.APP_URL}/payment-success?provider=lemonsqueezy`;

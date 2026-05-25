@@ -70,11 +70,20 @@ export default async function handler(req, res) {
 
       // Determine if subscription is active
       const status = event.data?.attributes?.status;
-      const isActive = status === 'active' || status === 'paid' || eventName === 'order_created';
+      const isActive =
+        status === 'active' ||
+        status === 'paid' ||
+        status === 'trialing';
+
+      // Do not upgrade on unpaid/new order events.
+      if (eventName === 'order_created' && status !== 'paid') {
+        return res.status(200).json({ received: true });
+      }
+
       const plan = isActive ? 'pro' : 'free';
 
       // Update user plan in Supabase
-      const supabaseUrl = process.env.VITE_SUPABASE_URL;
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
       const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
       if (!supabaseUrl || !supabaseServiceKey) {
@@ -119,7 +128,7 @@ export default async function handler(req, res) {
       const userId = customData.user_id;
 
       if (userId) {
-        const supabaseUrl = process.env.VITE_SUPABASE_URL;
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
         if (supabaseUrl && supabaseServiceKey) {

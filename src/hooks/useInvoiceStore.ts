@@ -16,7 +16,7 @@ export interface InvoiceState {
   business: {
     name: string; email: string; phone: string;
     address1: string; city: string; state: string; pin: string;
-    gstin: string; pan: string; logoUrl: string | null;
+    gstin: string; pan: string; logoUrl: string | null; logoSize?: number;
   };
   client: {
     name: string; email: string; address: string;
@@ -80,6 +80,14 @@ function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
 }
 
+function cloudModeEnabled(): boolean {
+  try {
+    return localStorage.getItem('sk_cloud_mode') === '1';
+  } catch {
+    return false;
+  }
+}
+
 function getNextInvoiceNumber(): string {
   const last = localStorage.getItem('sk_last_inv');
   const num = last ? parseInt(last) + 1 : 1;
@@ -91,9 +99,9 @@ function createDefaultState(): InvoiceState {
   return {
     docType: 'invoice',
     business: {
-      name: '', email: '', phone: '',
-      address1: '', city: '', state: '', pin: '',
-      gstin: '', pan: '', logoUrl: null,
+        name: '', email: '', phone: '',
+        address1: '', city: '', state: '', pin: '',
+        gstin: '', pan: '', logoUrl: null, logoSize: 64,
     },
     client: {
       name: '', email: '', address: '',
@@ -117,7 +125,7 @@ function createDefaultState(): InvoiceState {
     notes: 'Thank you for your business!',
     terms: 'Payment due within 15 days of invoice date. Late payments attract 1.5% monthly interest.',
     style: {
-      template: getDefaultTemplateKey(), brandColor: '#2563EB',
+      template: 'concrete', brandColor: '#2563EB',
       fontFamily: 'Inter', fontSize: 'md', spacing: 'normal',
     },
     profession: 'developer',
@@ -125,6 +133,10 @@ function createDefaultState(): InvoiceState {
 }
 
 function loadSavedState(): InvoiceState {
+  if (cloudModeEnabled()) {
+    return createDefaultState();
+  }
+
   try {
     const saved = localStorage.getItem('sk_draft');
     if (saved) {
@@ -136,6 +148,8 @@ function loadSavedState(): InvoiceState {
 }
 
 function saveState(state: InvoiceState) {
+  if (cloudModeEnabled()) return;
+
   try {
     localStorage.setItem('sk_draft', JSON.stringify(state));
   } catch {}

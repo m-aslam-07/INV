@@ -16,10 +16,10 @@ export const PLANS = {
   },
   pro: {
     name: 'Pro',
-    priceINR: 199, // ₹199/month
-    priceUSD: 5, // $5/month
+    priceINR: 149, // ₹149/month
+    priceUSD: 4, // $4/month
     annualPriceINR: 1499, // ₹1,499/year
-    annualPriceUSD: 49, // $49/year
+    annualPriceUSD: 39, // $39/year
     features: [
       'Everything in Free',
       'Invoice history',

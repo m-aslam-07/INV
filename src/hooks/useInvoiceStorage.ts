@@ -8,6 +8,8 @@ import type { StoredInvoice, InvoiceData } from '../lib/types';
 interface UseInvoiceStorageReturn {
   /** Save the current invoice form state. Deduplicates by invoice number. */
   save: () => Promise<boolean>;
+  /** Save the current invoice details without line items. */
+  saveDetails: () => Promise<boolean>;
   /** Load invoice history. Lazy-loaded, cached after first call. */
   loadHistory: () => Promise<StoredInvoice[]>;
   /** Delete an invoice from history */
@@ -41,11 +43,10 @@ export function useInvoiceStorage(): UseInvoiceStorageReturn {
 
   const userId = isPro && user ? user.id : undefined;
 
-  const save = useCallback(async (): Promise<boolean> => {
+  const persist = useCallback(async (state: InvoiceState): Promise<boolean> => {
     setSaving(true);
     setError(null);
     try {
-      const state = invoiceStore.getFullState();
       // Cast InvoiceState to InvoiceData — they share the same shape
       const invoiceData = state as unknown as InvoiceData;
       await saveInvoice(invoiceData, userId);
@@ -60,7 +61,19 @@ export function useInvoiceStorage(): UseInvoiceStorageReturn {
     } finally {
       setSaving(false);
     }
-  }, [invoiceStore, userId]);
+  }, [userId]);
+
+  const save = useCallback(async (): Promise<boolean> => {
+    return persist(invoiceStore.getFullState());
+  }, [invoiceStore, persist]);
+
+  const saveDetails = useCallback(async (): Promise<boolean> => {
+    const state = invoiceStore.getFullState();
+    return persist({
+      ...state,
+      items: [],
+    });
+  }, [invoiceStore, persist]);
 
   const loadHistory = useCallback(async (): Promise<StoredInvoice[]> => {
     // Return cached if already loaded this session
@@ -106,6 +119,7 @@ export function useInvoiceStorage(): UseInvoiceStorageReturn {
 
   return {
     save,
+    saveDetails,
     loadHistory,
     deleteEntry,
     restoreEntry,
