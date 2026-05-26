@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
 function getSupabaseUrl() {
-  return process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  return process.env.SUPABASE_URL;
 }
 
 function getSupabaseAnonKey() {
-  return process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  return process.env.SUPABASE_ANON_KEY;
 }
 
 function getServiceRoleKey() {
@@ -56,7 +56,7 @@ export async function getAuthenticatedUser(req) {
 }
 
 export function setCorsHeaders(req, res) {
-  const appUrl = process.env.APP_URL || process.env.VITE_APP_URL || 'http://localhost:5173';
+  const appUrl = process.env.APP_URL || 'http://localhost:5173';
   const origin = req.headers.origin;
   const configuredOrigin = (() => {
     try {

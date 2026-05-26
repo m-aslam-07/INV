@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { createSupabaseServiceClient, getAuthenticatedUser, setCorsHeaders } from './_auth';
+import { createSupabaseServiceClient, getAuthenticatedUser, setCorsHeaders } from './_auth.js';
 
 // Vercel serverless function for Razorpay payment verification
 export default async function handler(req, res) {

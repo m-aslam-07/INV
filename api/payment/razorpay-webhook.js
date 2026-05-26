@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { createSupabaseServiceClient } from './_auth';
+import { createSupabaseServiceClient } from './_auth.js';
 
 export const config = {
   api: {

@@ -1,4 +1,4 @@
-import { getAuthenticatedUser, setCorsHeaders } from './_auth';
+import { getAuthenticatedUser, setCorsHeaders } from './_auth.js';
 
 // Vercel serverless function to create LemonSqueezy checkout
 export default async function handler(req, res) {
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     }
 
     const apiKey = process.env.LEMONSQUEEZY_API_KEY;
-    const storeId = process.env.LEMONSQUEEZY_STORE_ID || process.env.VITE_LEMONSQUEEZY_STORE_ID;
+    const storeId = process.env.LEMONSQUEEZY_STORE_ID;
 
     if (!apiKey || !storeId) {
       return res.status(500).json({ error: 'LemonSqueezy is not configured' });
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'LemonSqueezy variant not configured' });
     }
 
-    const appUrl = process.env.APP_URL || process.env.VITE_APP_URL || 'http://localhost:5173';
+    const appUrl = process.env.APP_URL || 'http://localhost:5173';
 
     // Create checkout via LemonSqueezy API
     const checkoutRes = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {

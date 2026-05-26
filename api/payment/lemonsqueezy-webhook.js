@@ -83,7 +83,7 @@ export default async function handler(req, res) {
       const plan = isActive ? 'pro' : 'free';
 
       // Update user plan in Supabase
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const supabaseUrl = process.env.SUPABASE_URL;
       const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
       if (!supabaseUrl || !supabaseServiceKey) {
@@ -128,7 +128,7 @@ export default async function handler(req, res) {
       const userId = customData.user_id;
 
       if (userId) {
-        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+        const supabaseUrl = process.env.SUPABASE_URL;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
         if (supabaseUrl && supabaseServiceKey) {
