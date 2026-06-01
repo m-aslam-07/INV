@@ -11,6 +11,7 @@ import { HistoryPanel } from '../components/app/HistoryPanel';
 import { UpgradeModal } from '../components/app/UpgradeModal';
 import { LoginModal } from '../components/auth/LoginModal';
 import { loadFromHash } from '../utils/shareLink';
+import { buildInvoiceFilename, downloadInvoicePdfFromElement } from '../lib/invoicePdf';
 import { Zap, Sparkles, LogOut, LogIn } from 'lucide-react';
 
 export default function AppPage() {
@@ -47,66 +48,10 @@ export default function AppPage() {
   const handleDownload = useCallback(async () => {
     setDownloading(true);
     try {
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import('html2canvas'),
-        import('jspdf'),
-      ]);
-
       const source = document.getElementById('invoice-preview-target');
       if (!source) throw new Error('Preview element not found');
-
-      // html2canvas clones the entire document into an off-screen iframe before
-      // painting. The `onclone` callback gives us the cloned element to modify
-      // freely — strip the CSS scale() zoom transform so the clone renders at
-      // the template's true A4 dimensions, not the UI zoom level.
-      const canvas = await html2canvas(source, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        onclone: (_clonedDoc: Document, clonedEl: HTMLElement) => {
-          // Strip scale() from the zoom wrapper
-          const wrapper = clonedEl.parentElement;
-          if (wrapper) {
-            wrapper.style.transform = 'none';
-            wrapper.style.transformOrigin = 'top left';
-            wrapper.style.width = 'auto';
-          }
-          // Ensure the invoice itself is at A4 width (794 px @ 96 dpi)
-          clonedEl.style.transform = 'none';
-          clonedEl.style.width = '794px';
-          clonedEl.style.minHeight = 'auto';
-          clonedEl.style.boxShadow = 'none';
-          clonedEl.style.borderRadius = '0';
-          clonedEl.style.overflow = 'visible';
-        },
-        width: source.scrollWidth || 794,
-        height: source.scrollHeight || 1123,
-      });
-
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const imgData = canvas.toDataURL('image/jpeg', 0.97);
-      const pageW = 210;
-      const pageH = 297;
-      const imgH = (canvas.height * pageW) / canvas.width;
-
-      pdf.addImage(imgData, 'JPEG', 0, 0, pageW, imgH);
-      let leftHeight = imgH - pageH;
-      while (leftHeight > 0) {
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, -(imgH - leftHeight), pageW, imgH);
-        leftHeight -= pageH;
-      }
-
       const state = store.getFullState();
-      const fname = [
-        state.document.number,
-        state.client.name.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20),
-        state.document.date,
-      ].filter(Boolean).join('_') + '.pdf';
-
-      pdf.save(fname);
+      await downloadInvoicePdfFromElement(source, buildInvoiceFilename(state));
 
       // Save to persistent storage (Supabase for Pro, localStorage for Free)
       try {
@@ -128,28 +73,28 @@ export default function AppPage() {
   }, [store, addToast, invoiceStorage]);
 
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="h-[100dvh] flex flex-col bg-white overflow-x-hidden">
       {/* App Navbar */}
-      <header className="h-12 border-b border-gray-100 flex items-center justify-between px-4 flex-shrink-0 bg-white">
+      <header className="min-h-14 h-auto md:h-12 border-b border-gray-100 flex items-center justify-between px-3 py-3 md:px-4 md:py-0 flex-shrink-0 bg-white gap-3">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
             <Zap size={12} className="text-white" />
           </div>
           <span className="font-semibold text-sm text-gray-900">Strikin</span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
           {!isPro && (
             <button onClick={() => useAuthStore.getState().openUpgradeModal('Pro features')}
-              className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg font-medium hover:bg-blue-100 transition-colors">
+              className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-3 py-2 rounded-lg font-medium hover:bg-blue-100 transition-colors">
               <Sparkles size={12} /> Upgrade to Pro
             </button>
           )}
           {user ? (
-            <button onClick={signOut} className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 px-2 py-1.5">
+            <button onClick={signOut} className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 px-2 py-2">
               <LogOut size={14} /> Sign out
             </button>
           ) : (
-            <button onClick={openLoginModal} className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 px-2 py-1.5">
+            <button onClick={openLoginModal} className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 px-2 py-2">
               <LogIn size={14} /> Sign in
             </button>
           )}
@@ -157,9 +102,9 @@ export default function AppPage() {
       </header>
 
       {/* Desktop layout */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Mobile tabs */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 flex">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 flex pb-[env(safe-area-inset-bottom)]">
           <button onClick={() => setActiveTab('edit')}
             className={`flex-1 py-3 text-sm font-medium ${activeTab === 'edit' ? 'text-blue-600 border-t-2 border-blue-600' : 'text-gray-500'}`}>
             Edit
@@ -171,7 +116,7 @@ export default function AppPage() {
         </div>
 
         {/* Left panel */}
-        <div className={`w-full lg:w-[420px] lg:border-r border-gray-100 flex-shrink-0 ${activeTab !== 'edit' ? 'hidden lg:block' : ''}`}>
+        <div className={`w-full lg:w-[420px] lg:border-r border-gray-100 flex-shrink-0 min-h-0 ${activeTab !== 'edit' ? 'hidden lg:block' : ''}`}>
           <FormPanel
             onDownload={handleDownload}
             downloading={downloading}
@@ -181,13 +126,13 @@ export default function AppPage() {
         </div>
 
         {/* Right panel */}
-        <div className={`flex-1 ${activeTab !== 'preview' ? 'hidden lg:block' : ''}`}>
+        <div className={`flex-1 min-h-0 ${activeTab !== 'preview' ? 'hidden lg:block' : ''}`}>
           <PreviewPanel />
         </div>
 
         {/* History panel */}
         {showHistory && (
-          <div className="w-80 border-l border-gray-100 bg-white flex-shrink-0">
+          <div className="w-full sm:w-80 border-l border-gray-100 bg-white flex-shrink-0 max-w-full">
             <HistoryPanel onClose={() => setShowHistory(false)} />
           </div>
         )}

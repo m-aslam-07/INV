@@ -29,8 +29,8 @@ export function LoginModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-3 sm:p-4 bg-gray-900/40 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative max-h-[calc(100dvh-1.5rem)]">
         <button
           onClick={closeLoginModal}
           className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
@@ -38,7 +38,7 @@ export function LoginModal() {
           <X size={20} />
         </button>
 
-        <div className="p-8">
+        <div className="p-5 sm:p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h2>
           <p className="text-sm text-gray-500 mb-6">Sign in to access your PRO features.</p>
 

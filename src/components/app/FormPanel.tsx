@@ -64,20 +64,20 @@ export function FormPanel({ onDownload, downloading, downloadSuccess, onShowHist
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full min-h-0 flex flex-col">
       {/* Progress bar */}
       <WizardProgress current={step} onChange={goTo} />
 
       {/* Step content */}
       <div
         key={step}
-        className={`flex-1 overflow-y-auto p-5 pb-32 animate-wizard-${slideDir}`}
+        className={`flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] animate-wizard-${slideDir}`}
       >
         {renderStep()}
       </div>
 
       {/* Bottom bar */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-100 px-5 py-3 flex-shrink-0">
+      <div className="sticky bottom-0 bg-white border-t border-gray-100 px-4 sm:px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex-shrink-0">
           {step < 4 ? (
           /* Steps 1–4: Back + Next */
           <div className="flex gap-3">

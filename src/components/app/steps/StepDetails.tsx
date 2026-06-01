@@ -91,12 +91,12 @@ export function StepDetails() {
         <p className={labelCls}>Your Business Details</p>
         <div className="space-y-3">
           <input className={inputCls} placeholder="Your business / freelancer name" value={store.business.name} onChange={e => store.updateBusiness({ name: e.target.value })} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input className={inputCls} placeholder="Email" value={store.business.email} onChange={e => store.updateBusiness({ email: e.target.value })} />
             <input className={inputCls} placeholder="Phone" value={store.business.phone} onChange={e => store.updateBusiness({ phone: e.target.value })} />
           </div>
           <input className={inputCls} placeholder="Address" value={store.business.address1} onChange={e => store.updateBusiness({ address1: e.target.value })} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input className={inputCls} placeholder="City" value={store.business.city} onChange={e => store.updateBusiness({ city: e.target.value })} />
             <input className={inputCls} placeholder="State" value={store.business.state} onChange={e => store.updateBusiness({ state: e.target.value })} />
           </div>
@@ -118,8 +118,14 @@ export function StepDetails() {
           <input className={inputCls} placeholder="PAN" value={store.business.pan} onChange={e => store.updateBusiness({ pan: e.target.value.toUpperCase() })} />
           <ProGated feature="Logo upload">
             <div className={`border-2 border-dashed border-gray-200 rounded-lg p-4 transition-colors ${logoUploading || logoRemoving ? 'opacity-70' : ''}`}>
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-              <div className="flex items-center gap-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={handleLogoUpload}
+              />
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -156,7 +162,7 @@ export function StepDetails() {
                     type="button"
                     onClick={handleLogoRemove}
                     disabled={logoUploading || logoRemoving}
-                    className="inline-flex h-11 items-center justify-center rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-600 hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-colors disabled:cursor-not-allowed"
+                    className="inline-flex h-11 w-full sm:w-auto items-center justify-center rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-600 hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-colors disabled:cursor-not-allowed"
                     title="Remove logo"
                   >
                     {logoRemoving ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
@@ -199,7 +205,7 @@ export function StepDetails() {
         <p className={labelCls}>Invoice Details</p>
         <div className="space-y-3">
           <input className={inputCls} placeholder="Invoice number" value={store.document.number} onChange={e => store.updateDocument({ number: e.target.value })} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Issue Date</label>
               <input type="date" className={inputCls} value={store.document.date} onChange={e => store.updateDocument({ date: e.target.value })} />
@@ -209,7 +215,7 @@ export function StepDetails() {
               <input type="date" className={inputCls} value={store.document.dueDate} onChange={e => store.updateDocument({ dueDate: e.target.value })} />
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {[7, 15, 30, 45].map(d => (
               <button key={d} onClick={() => setDueFromTerms(d)}
                 className={`px-3 py-1 rounded-md text-xs font-medium border transition-all ${dueInDays === d ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}>

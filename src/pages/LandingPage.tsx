@@ -56,11 +56,11 @@ export default function LandingPage() {
   const upgradeLink = user ? '/upgrade' : '/login';
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen overflow-x-hidden">
       <Navbar />
 
       {/* Hero */}
-      <section className="py-20 md:py-24 text-center px-4">
+      <section className="py-16 sm:py-20 md:py-24 text-center px-4">
         <div className="max-w-4xl mx-auto">
           <span className="inline-block bg-blue-50 text-blue-700 rounded-full px-4 py-1 text-sm font-medium mb-6">
             🇮🇳 Built for India · GST-compliant
@@ -90,7 +90,7 @@ export default function LandingPage() {
               <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
               <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
             </div>
-            <div className="grid md:grid-cols-2 divide-x divide-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-100">
               <div className="p-6 text-left space-y-3">
                 <div className="flex gap-2 mb-4">
                   {['Invoice', 'Proforma', 'Proposal', 'Receipt'].map((t, i) => (
@@ -99,7 +99,7 @@ export default function LandingPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="h-8 bg-gray-50 rounded-lg px-3 flex items-center text-sm text-gray-600">Acme Design Studio</div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div className="h-8 bg-gray-50 rounded-lg px-3 flex items-center text-sm text-gray-400">hello@acme.in</div>
                     <div className="h-8 bg-gray-50 rounded-lg px-3 flex items-center text-sm text-gray-400">+91 98765 43210</div>
                   </div>
@@ -128,7 +128,7 @@ export default function LandingPage() {
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Built for your profession</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {professions.map(p => (
               <Link key={p.key} to={`/app?profession=${p.key}`}
                 className="bg-white border border-gray-100 rounded-xl p-4 hover:border-blue-200 hover:shadow-sm transition-all group text-center">
@@ -145,7 +145,7 @@ export default function LandingPage() {
       <section id="features" className="py-16 px-4 bg-gray-50/50">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Everything you need</h2>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {features.map(f => (
               <div key={f.title} className="bg-white border border-gray-100 rounded-xl p-5">
                 <div className="bg-blue-50 rounded-lg p-2 w-fit text-blue-600 mb-3">{f.icon}</div>
@@ -161,7 +161,7 @@ export default function LandingPage() {
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-10">How it works</h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { step: '1', title: 'Pick your profession', desc: 'Select your profession and get pre-filled sample line items instantly.' },
               { step: '2', title: 'Fill in the details', desc: 'Add your business info, client details, and customize the design.' },
@@ -181,7 +181,7 @@ export default function LandingPage() {
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Simple pricing</h2>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white border border-gray-100 rounded-xl p-6">
               <h3 className="font-semibold text-gray-900 mb-1">Free</h3>
               <p className="text-3xl font-bold text-gray-900 mb-4">₹0</p>

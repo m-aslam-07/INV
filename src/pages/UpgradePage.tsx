@@ -40,9 +40,9 @@ export default function UpgradePage() {
   // If already pro, show success state
   if (isPro) {
     return (
-      <div className="bg-white min-h-screen flex flex-col">
+      <div className="bg-white min-h-screen flex flex-col overflow-x-hidden">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center px-4 py-16">
+        <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-16">
           <div className="text-center max-w-md">
             <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <Crown size={32} className="text-white" />
@@ -65,9 +65,9 @@ export default function UpgradePage() {
   // If not logged in, redirect to login
   if (!user) {
     return (
-      <div className="bg-white min-h-screen flex flex-col">
+      <div className="bg-white min-h-screen flex flex-col overflow-x-hidden">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center px-4 py-16">
+        <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-16">
           <div className="text-center max-w-md">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Zap size={32} className="text-blue-600" />
@@ -139,10 +139,10 @@ export default function UpgradePage() {
   const periodLabel = period === 'annual' ? '/year' : '/month';
 
   return (
-    <div className="bg-white min-h-screen flex flex-col">
+    <div className="bg-white min-h-screen flex flex-col overflow-x-hidden">
       <Navbar />
 
-      <main className="flex-1 px-4 py-12">
+      <main className="flex-1 px-4 py-10 sm:py-12">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-10">
@@ -186,7 +186,7 @@ export default function UpgradePage() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Features */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6">
               <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">

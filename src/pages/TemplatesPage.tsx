@@ -44,7 +44,7 @@ export default function TemplatesPage() {
   const allTemplates = getAllTemplates();
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen overflow-x-hidden">
       <Navbar />
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">

@@ -9,6 +9,7 @@
  */
 
 import { env } from '../lib/env';
+import { useAuthStore } from '../hooks/useAuthStore';
 import { supabase } from '../lib/supabase/client';
 
 declare global {
@@ -171,6 +172,7 @@ export async function openRazorpayCheckout(options: RazorpayOptions): Promise<vo
       handler: async (response: RazorpaySuccessResponse) => {
         try {
           await verifyRazorpayPayment(response);
+          await useAuthStore.getState().refreshPlan();
           onSuccess(response);
         } catch (err) {
           onError(err);

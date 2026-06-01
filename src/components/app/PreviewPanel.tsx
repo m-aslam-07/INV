@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, type TouchEvent } from 'react';
 import { Loader2, Save, Check } from 'lucide-react';
 import { useInvoiceStore, type InvoiceState } from '../../hooks/useInvoiceStore';
 import { useAuthStore } from '../../hooks/useAuthStore';
@@ -12,12 +12,28 @@ export function PreviewPanel() {
   const { isPro } = useAuthStore();
   const { saveDetails, saving } = useInvoiceStorage();
   const { addToast } = useToastStore();
-  const [zoom, setZoom] = useState(75);
+  const [isMobilePreview, setIsMobilePreview] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768;
+  });
+  const [zoom, setZoom] = useState(() => {
+    if (typeof window === 'undefined') return 75;
+    return window.innerWidth < 768 ? 50 : 75;
+  });
   const [updating, setUpdating] = useState(false);
   const [detailsSaved, setDetailsSaved] = useState(false);
   const timerRef = useRef<number | null>(null);
   const detailsTimerRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const previewViewportRef = useRef<HTMLDivElement>(null);
+  const pinchStateRef = useRef<{
+    startDistance: number;
+    startZoom: number;
+    centerX: number;
+    centerY: number;
+    startScrollLeft: number;
+    startScrollTop: number;
+  } | null>(null);
 
   const state = store.getFullState();
   const Template = resolveTemplate(state.style.template);
@@ -31,6 +47,13 @@ export function PreviewPanel() {
     timerRef.current = window.setTimeout(() => setUpdating(false), 300);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [state.business, state.client, state.document, state.items, state.tax, state.payment, state.notes, state.terms, state.style]);
+
+  useEffect(() => {
+    const updatePreviewMode = () => setIsMobilePreview(window.innerWidth < 768);
+    updatePreviewMode();
+    window.addEventListener('resize', updatePreviewMode);
+    return () => window.removeEventListener('resize', updatePreviewMode);
+  }, []);
 
   // Sync CSS variable for logo size on the preview target
   useEffect(() => {
@@ -70,6 +93,53 @@ export function PreviewPanel() {
     // persist to draft
   };
 
+  const handlePreviewTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    if (!isMobilePreview || event.touches.length !== 2 || !previewViewportRef.current) return;
+
+    const [firstTouch, secondTouch] = Array.from(event.touches);
+    const firstPoint = { x: firstTouch.clientX, y: firstTouch.clientY };
+    const secondPoint = { x: secondTouch.clientX, y: secondTouch.clientY };
+    const centerX = (firstPoint.x + secondPoint.x) / 2 - previewViewportRef.current.getBoundingClientRect().left;
+    const centerY = (firstPoint.y + secondPoint.y) / 2 - previewViewportRef.current.getBoundingClientRect().top;
+
+    pinchStateRef.current = {
+      startDistance: Math.hypot(firstPoint.x - secondPoint.x, firstPoint.y - secondPoint.y),
+      startZoom: zoom,
+      centerX,
+      centerY,
+      startScrollLeft: previewViewportRef.current.scrollLeft,
+      startScrollTop: previewViewportRef.current.scrollTop,
+    };
+  };
+
+  const handlePreviewTouchMove = (event: TouchEvent<HTMLDivElement>) => {
+    if (!isMobilePreview || !pinchStateRef.current || !previewViewportRef.current || event.touches.length !== 2) return;
+
+    event.preventDefault();
+    const [firstTouch, secondTouch] = Array.from(event.touches);
+    const currentDistance = Math.hypot(
+      firstTouch.clientX - secondTouch.clientX,
+      firstTouch.clientY - secondTouch.clientY
+    );
+
+    const nextZoom = Math.max(35, Math.min(180, (pinchStateRef.current.startZoom * currentDistance) / pinchStateRef.current.startDistance));
+    const nextScale = nextZoom / 100;
+    const currentScale = pinchStateRef.current.startZoom / 100;
+
+    const contentX = (pinchStateRef.current.startScrollLeft + pinchStateRef.current.centerX) / currentScale;
+    const contentY = (pinchStateRef.current.startScrollTop + pinchStateRef.current.centerY) / currentScale;
+
+    previewViewportRef.current.scrollLeft = contentX * nextScale - pinchStateRef.current.centerX;
+    previewViewportRef.current.scrollTop = contentY * nextScale - pinchStateRef.current.centerY;
+    setZoom(Math.round(nextZoom));
+  };
+
+  const handlePreviewTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    if (event.touches.length < 2) {
+      pinchStateRef.current = null;
+    }
+  };
+
   // Load font on demand
   useEffect(() => {
     const font = state.style.fontFamily;
@@ -101,9 +171,11 @@ export function PreviewPanel() {
   };
 
   const scale = zoom / 100;
+  const mobilePageWidth = `calc(210mm * ${scale})`;
+  const mobilePageHeight = `calc(297mm * ${scale})`;
 
   return (
-    <div className="h-full overflow-y-auto bg-gray-50 p-6" ref={containerRef}>
+    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden bg-gray-50 p-3 sm:p-6" ref={containerRef}>
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-3">
@@ -132,39 +204,83 @@ export function PreviewPanel() {
       </div>
 
       {/* A4 Preview with relative wrapper for overlay positioning */}
-      <div className="flex justify-center">
-        <div className="relative" id="invoice-preview-wrapper">
-          <div
-            style={{ transform: `scale(${scale})`, transformOrigin: 'top center', width: '210mm', minHeight: '297mm' }}
-          >
+      <div className={isMobilePreview ? 'flex justify-center' : 'flex justify-center'}>
+        {isMobilePreview ? (
+          <div className="relative w-full max-w-full">
             <div
-              id="invoice-preview-target"
-              className="bg-white shadow-xl rounded-lg p-8"
-              style={{ width: '210mm', minHeight: '297mm' }}
+              ref={previewViewportRef}
+              className="w-full overflow-auto overscroll-contain rounded-xl border border-gray-100 bg-gray-100/40"
+              style={{ touchAction: 'pan-x pan-y', WebkitOverflowScrolling: 'touch', maxHeight: 'calc(100dvh - 10rem)' }}
+              onTouchStart={handlePreviewTouchStart}
+              onTouchMove={handlePreviewTouchMove}
+              onTouchEnd={handlePreviewTouchEnd}
+              onTouchCancel={handlePreviewTouchEnd}
             >
-              <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading Template...</div>}>
-                <Template state={state} isPro={isPro} />
-              </Suspense>
-            </div>
-          </div>
-          {/* Logo size popover */}
-          {editingLogo && (
-            <div
-              className="absolute bg-white shadow-lg rounded-md p-3 z-50"
-              style={{ left: popoverPos.left, top: popoverPos.top, transform: 'translate(-50%, -120%)', minWidth: 220 }}
-            >
-              <div className="text-sm text-gray-700 mb-2">Logo size</div>
-              <input type="range" min={32} max={200} value={logoSize} onChange={e => applyLogoSize(Number(e.target.value))} />
-              <div className="flex items-center justify-between mt-2 gap-2">
-                <input className="border rounded px-2 py-1 text-sm w-20" value={logoSize} onChange={e => applyLogoSize(Number(e.target.value || 0))} />
-                <div className="flex gap-2">
-                  <button className="px-2 py-1 text-sm border rounded" onClick={() => { setEditingLogo(false); store.updateBusiness({ logoSize }); }}>Done</button>
-                  <button className="px-2 py-1 text-sm border rounded" onClick={() => { setEditingLogo(false); setLogoSize(state.business.logoSize ?? 64); }}>Cancel</button>
+              <div className="relative" style={{ width: mobilePageWidth, height: mobilePageHeight }} id="invoice-preview-wrapper">
+                <div
+                  id="invoice-preview-target"
+                  className="absolute left-0 top-0 bg-white shadow-xl rounded-lg p-4 sm:p-8"
+                  style={{ width: '210mm', minHeight: '297mm', transform: `scale(${scale})`, transformOrigin: 'top left' }}
+                >
+                  <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading Template...</div>}>
+                    <Template state={state} isPro={isPro} />
+                  </Suspense>
                 </div>
               </div>
             </div>
-          )}
-        </div>
+            {/* Logo size popover */}
+            {editingLogo && (
+              <div
+                className="absolute bg-white shadow-lg rounded-md p-3 z-50 max-w-[calc(100vw-2rem)]"
+                style={{ left: popoverPos.left, top: popoverPos.top, transform: 'translate(-50%, -120%)', minWidth: 220 }}
+              >
+                <div className="text-sm text-gray-700 mb-2">Logo size</div>
+                <input type="range" min={32} max={200} value={logoSize} onChange={e => applyLogoSize(Number(e.target.value))} />
+                <div className="flex items-center justify-between mt-2 gap-2">
+                  <input className="border rounded px-2 py-1 text-sm w-20" value={logoSize} onChange={e => applyLogoSize(Number(e.target.value || 0))} />
+                  <div className="flex gap-2">
+                    <button className="px-2 py-1 text-sm border rounded" onClick={() => { setEditingLogo(false); store.updateBusiness({ logoSize }); }}>Done</button>
+                    <button className="px-2 py-1 text-sm border rounded" onClick={() => { setEditingLogo(false); setLogoSize(state.business.logoSize ?? 64); }}>Cancel</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="relative w-full max-w-full" id="invoice-preview-wrapper">
+            <div
+              className="mx-auto"
+              style={{ transform: `scale(${scale})`, transformOrigin: 'top center', width: '210mm', minHeight: '297mm' }}
+            >
+              <div
+                id="invoice-preview-target"
+                className="bg-white shadow-xl rounded-lg p-4 sm:p-8"
+                style={{ width: '210mm', minHeight: '297mm' }}
+              >
+                <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading Template...</div>}>
+                  <Template state={state} isPro={isPro} />
+                </Suspense>
+              </div>
+            </div>
+            {/* Logo size popover */}
+            {editingLogo && (
+              <div
+                className="absolute bg-white shadow-lg rounded-md p-3 z-50 max-w-[calc(100vw-2rem)]"
+                style={{ left: popoverPos.left, top: popoverPos.top, transform: 'translate(-50%, -120%)', minWidth: 220 }}
+              >
+                <div className="text-sm text-gray-700 mb-2">Logo size</div>
+                <input type="range" min={32} max={200} value={logoSize} onChange={e => applyLogoSize(Number(e.target.value))} />
+                <div className="flex items-center justify-between mt-2 gap-2">
+                  <input className="border rounded px-2 py-1 text-sm w-20" value={logoSize} onChange={e => applyLogoSize(Number(e.target.value || 0))} />
+                  <div className="flex gap-2">
+                    <button className="px-2 py-1 text-sm border rounded" onClick={() => { setEditingLogo(false); store.updateBusiness({ logoSize }); }}>Done</button>
+                    <button className="px-2 py-1 text-sm border rounded" onClick={() => { setEditingLogo(false); setLogoSize(state.business.logoSize ?? 64); }}>Cancel</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

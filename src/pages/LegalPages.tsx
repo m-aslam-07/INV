@@ -3,7 +3,7 @@ import { Footer } from '../components/landing/Footer';
 
 export function PrivacyPage() {
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen overflow-x-hidden">
       <Navbar />
       <div className="max-w-3xl mx-auto px-4 py-16">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Privacy Policy</h1>
@@ -28,7 +28,7 @@ export function PrivacyPage() {
 
 export function TermsPage() {
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen overflow-x-hidden">
       <Navbar />
       <div className="max-w-3xl mx-auto px-4 py-16">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Terms of Service</h1>

@@ -51,9 +51,9 @@ export default function SignupPage() {
   // Email confirmation screen
   if (emailSent) {
     return (
-      <div className="bg-white min-h-screen flex flex-col">
+      <div className="bg-white min-h-screen flex flex-col overflow-x-hidden">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center px-4 py-16">
+        <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-16">
           <div className="w-full max-w-md text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle size={32} className="text-green-600" />
@@ -76,10 +76,10 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="bg-white min-h-screen flex flex-col">
+    <div className="bg-white min-h-screen flex flex-col overflow-x-hidden">
       <Navbar />
 
-      <main className="flex-1 flex items-center justify-center px-4 py-16">
+      <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-16">
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="text-center mb-8">

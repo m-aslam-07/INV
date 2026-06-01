@@ -91,6 +91,16 @@ export interface InvoiceData {
 export interface StoredInvoice {
   id: string;
   user_id: string;
+  template: string;
+  invoice_number: string;
+  client_name: string;
+  company_name: string;
+  subtotal: number;
+  discount_total: number;
+  tax_total: number;
+  total_amount: number;
+  currency: 'INR' | 'USD' | 'EUR' | 'GBP';
+  pdf_url: string | null;
   invoice_json: InvoiceData;
   created_at: string;
   updated_at: string;

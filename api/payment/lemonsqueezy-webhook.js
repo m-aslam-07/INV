@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { createSupabaseServiceClient, logPaymentBackendEnvStatus } from './_auth.js';
 
 // Vercel serverless function for LemonSqueezy webhook handling
 // This endpoint receives POST from LemonSqueezy after successful payment
@@ -26,6 +26,8 @@ export default async function handler(req, res) {
   }
 
   try {
+    logPaymentBackendEnvStatus('lemonsqueezy-webhook');
+
     const webhookSecret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
     if (!webhookSecret) {
       console.error('LEMONSQUEEZY_WEBHOOK_SECRET not configured');
@@ -83,15 +85,7 @@ export default async function handler(req, res) {
       const plan = isActive ? 'pro' : 'free';
 
       // Update user plan in Supabase
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-      if (!supabaseUrl || !supabaseServiceKey) {
-        console.error('Supabase not configured');
-        return res.status(500).json({ error: 'Server configuration error' });
-      }
-
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const supabase = createSupabaseServiceClient();
 
       const { error: updateError } = await supabase
         .from('users')
@@ -128,11 +122,8 @@ export default async function handler(req, res) {
       const userId = customData.user_id;
 
       if (userId) {
-        const supabaseUrl = process.env.SUPABASE_URL;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-        if (supabaseUrl && supabaseServiceKey) {
-          const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+          const supabase = createSupabaseServiceClient();
 
           await supabase
             .from('users')

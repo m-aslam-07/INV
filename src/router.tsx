@@ -7,6 +7,7 @@ const AppPage = lazy(() => import('./pages/AppPage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
 const BlogPage = lazy(() => import('./pages/BlogPage'));
+const InvoiceHistoryPage = lazy(() => import('./pages/InvoiceHistoryPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const SignupPage = lazy(() => import('./pages/SignupPage'));
 const UpgradePage = lazy(() => import('./pages/UpgradePage'));
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
   { path: '/', element: <Suspense fallback={<Loading />}><LandingPage /></Suspense> },
   { path: '/app', element: <Suspense fallback={<Loading />}><AppPage /></Suspense> },
   { path: '/templates', element: <Suspense fallback={<Loading />}><TemplatesPage /></Suspense> },
+  { path: '/dashboard', element: <Suspense fallback={<Loading />}><InvoiceHistoryPage /></Suspense> },
   { path: '/pricing', element: <Suspense fallback={<Loading />}><PricingPage /></Suspense> },
   { path: '/blog', element: <Suspense fallback={<Loading />}><BlogPage /></Suspense> },
   { path: '/legal/privacy', element: <Suspense fallback={<Loading />}><PrivacyPage /></Suspense> },

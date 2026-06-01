@@ -26,9 +26,9 @@ export default function PricingPage() {
   const upgradeLink = user ? '/upgrade' : '/login';
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen overflow-x-hidden">
       <Navbar />
-      <section className="py-16 px-4">
+      <section className="py-14 sm:py-16 px-4">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-3">Simple, transparent pricing</h1>
           <p className="text-gray-500 text-center mb-12">Start free. Upgrade when you need more.</p>
@@ -41,7 +41,7 @@ export default function PricingPage() {
             </div>
           )}
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Free */}
             <div className="bg-white border border-gray-100 rounded-2xl p-6">
               <h3 className="font-semibold text-gray-900 mb-1">Free</h3>

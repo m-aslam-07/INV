@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserId } from '@/lib/auth';
+import { getCurrentUserId } from '@/lib/auth';
 import { supabase } from '@/lib/supabase/client';
 import { saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice } from '@/lib/storage';
 
@@ -9,7 +9,7 @@ import { saveInvoice, getInvoices, getInvoice, updateInvoice, deleteInvoice } fr
  */
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserId();
+    const userId = await getCurrentUserId();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserId();
+    const userId = await getCurrentUserId();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -72,7 +72,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserId();
+    const userId = await getCurrentUserId();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -104,7 +104,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserId();
+    const userId = await getCurrentUserId();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -10,7 +10,7 @@ const posts = [
 
 export default function BlogPage() {
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen overflow-x-hidden">
       <Navbar />
       <section className="py-16 px-4">
         <div className="max-w-3xl mx-auto">

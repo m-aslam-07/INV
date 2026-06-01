@@ -5,10 +5,10 @@ import { XCircle, ArrowRight, RefreshCw } from 'lucide-react';
 
 export default function PaymentCancelPage() {
   return (
-    <div className="bg-white min-h-screen flex flex-col">
+    <div className="bg-white min-h-screen flex flex-col overflow-x-hidden">
       <Navbar />
 
-      <main className="flex-1 flex items-center justify-center px-4 py-16">
+      <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-16">
         <div className="w-full max-w-md text-center animate-fade-in">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <XCircle size={32} className="text-gray-400" />

@@ -21,7 +21,7 @@ export function StepTaxDiscount() {
             className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
         </label>
         {store.tax.discountEnabled && (
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
             <div className="flex rounded-lg bg-gray-50 p-0.5">
               <button onClick={() => store.updateTax({ discountType: 'percent' })}
                 className={`px-3 py-1 text-xs rounded-md ${store.tax.discountType === 'percent' ? 'bg-white shadow-sm font-medium' : 'text-gray-500'}`}>%</button>
@@ -48,7 +48,7 @@ export function StepTaxDiscount() {
                 <button onClick={() => store.updateTax({ gstType: autoGstType === 'intra' ? 'inter' : 'intra' })} className="underline ml-1">Override</button>
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button onClick={() => store.updateTax({ gstType: 'intra' })}
                 className={`px-3 py-1.5 text-xs rounded-lg border font-medium ${store.tax.gstType === 'intra' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'text-gray-500 border-gray-200'}`}>
                 CGST + SGST
@@ -58,7 +58,7 @@ export function StepTaxDiscount() {
                 IGST
               </button>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {GST_RATES.map(r => (
                 <button key={r} onClick={() => store.updateTax({ gstRate: r as 0 | 5 | 12 | 18 | 28 })}
                   className={`px-3 py-1.5 text-xs rounded-lg border font-medium ${store.tax.gstRate === r ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-500 border-gray-200 hover:border-gray-300'}`}>

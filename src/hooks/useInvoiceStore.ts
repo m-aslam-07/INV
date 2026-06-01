@@ -12,6 +12,7 @@ export interface LineItem {
 }
 
 export interface InvoiceState {
+  id?: string;
   docType: 'invoice' | 'proforma' | 'proposal' | 'receipt';
   business: {
     name: string; email: string; phone: string;
@@ -97,6 +98,7 @@ function getNextInvoiceNumber(): string {
 
 function createDefaultState(): InvoiceState {
   return {
+    id: generateId(),
     docType: 'invoice',
     business: {
         name: '', email: '', phone: '',
@@ -308,6 +310,7 @@ export const useInvoiceStore = create<InvoiceState & InvoiceActions>((set, get) 
   getFullState: () => {
     const s = get();
     return {
+      id: s.id,
       docType: s.docType,
       business: s.business,
       client: s.client,

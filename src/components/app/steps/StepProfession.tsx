@@ -30,7 +30,7 @@ export function StepProfession() {
       {/* Template */}
       <div>
         <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Template</p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 overflow-y-auto max-h-80 pr-2 custom-scrollbar">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 overflow-y-auto max-h-80 pr-2 custom-scrollbar">
           {getAllTemplates().map(t => (
             <button key={t.key} onClick={() => store.updateStyle({ template: t.key })}
               className={`p-3 rounded-xl border-2 text-xs font-medium capitalize transition-all text-left ${store.style.template === t.key ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-100 text-gray-600 hover:border-gray-200'}`}>

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
-import { createSupabaseServiceClient } from './_auth.js';
+import Razorpay from 'razorpay';
+import { createSupabaseServiceClient, logPaymentBackendEnvStatus } from './_auth.js';
 
 export const config = {
   api: {
@@ -22,7 +23,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    logPaymentBackendEnvStatus('razorpay-webhook');
+
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!webhookSecret) {
       return res.status(500).json({ error: 'Webhook not configured' });
     }
@@ -68,7 +73,33 @@ export default async function handler(req, res) {
       .eq('order_id', orderId)
       .maybeSingle();
 
-    if (paymentLogError || !paymentLog) {
+    let userId = paymentLog?.user_id || null;
+
+    if (paymentLogError) {
+      console.warn('payment_logs lookup failed during Razorpay webhook', {
+        error: paymentLogError.message,
+        orderId,
+      });
+    }
+
+    if (!userId) {
+      if (!keyId || !keySecret) {
+        return res.status(200).json({ received: true });
+      }
+
+      try {
+        const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+        const order = await razorpay.orders.fetch(orderId);
+        userId = order?.notes?.userId || null;
+      } catch (fetchError) {
+        console.error('Failed to fetch Razorpay order in webhook', {
+          message: fetchError?.message || String(fetchError),
+          orderId,
+        });
+      }
+    }
+
+    if (!userId) {
       return res.status(200).json({ received: true });
     }
 
@@ -78,20 +109,66 @@ export default async function handler(req, res) {
         status: 'verified',
         payment_id: paymentId,
       })
-      .eq('id', paymentLog.id);
+      .eq('id', paymentLog?.id || paymentId || orderId);
 
-    await supabase
+    const { data: existingUser, error: profileLookupError } = await supabase
       .from('users')
-      .upsert(
-        {
-          id: paymentLog.user_id,
-          plan: 'pro',
-          payment_provider: 'razorpay',
-          subscription_status: 'active',
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'id' }
-      );
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (profileLookupError) {
+      console.error('Failed to load user profile before Razorpay webhook update', {
+        error: profileLookupError.message,
+        userId,
+        orderId,
+      });
+      return res.status(200).json({ received: true });
+    }
+
+    if (!existingUser) {
+      console.warn('Skipping Razorpay webhook upgrade because user profile is missing', {
+        userId,
+        orderId,
+      });
+      return res.status(200).json({ received: true });
+    }
+
+    const { error: planUpdateError } = await supabase
+      .from('users')
+      .update({
+        plan: 'pro',
+        payment_provider: 'razorpay',
+        subscription_status: 'active',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (planUpdateError) {
+      console.error('Failed to upgrade user plan in Razorpay webhook', {
+        error: planUpdateError.message,
+        userId,
+        orderId,
+      });
+      return res.status(200).json({ received: true });
+    }
+
+    if (!paymentLog?.id) {
+      await supabase.from('payment_logs').insert({
+        user_id: userId,
+        provider: 'razorpay',
+        payment_id: paymentId,
+        order_id: orderId,
+        status: 'verified',
+        created_at: new Date().toISOString(),
+      }).catch((insertError) => {
+        console.warn('Could not persist Razorpay webhook log', {
+          error: insertError?.message || String(insertError),
+          orderId,
+          userId,
+        });
+      });
+    }
 
     return res.status(200).json({ received: true });
   } catch (error) {

@@ -56,6 +56,7 @@ export async function POST_LOGO(request: NextRequest) {
   try {
     const userId = await getUserId();
     if (!userId) {
+      console.error('[company.upload-logo] missing auth');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -63,15 +64,30 @@ export async function POST_LOGO(request: NextRequest) {
     const file = formData.get('file') as File;
 
     if (!file) {
+      console.error('[company.upload-logo] missing file in request');
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
     const logoUrl = await uploadLogo(file, userId);
     return NextResponse.json({ logoUrl });
   } catch (error) {
-    console.error('Failed to upload logo:', error);
+    const message = error instanceof Error ? error.message : 'Failed to upload logo';
+    console.error('[company.upload-logo] failed', message);
+
+    if (message.includes('Invalid logo file type')) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+
+    if (message.includes('5 MB or smaller')) {
+      return NextResponse.json({ error: message }, { status: 413 });
+    }
+
+    if (message.includes('not found')) {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+
     return NextResponse.json(
-      { error: 'Failed to upload logo' },
+      { error: message },
       { status: 500 }
     );
   }

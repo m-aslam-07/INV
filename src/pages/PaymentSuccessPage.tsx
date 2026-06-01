@@ -52,10 +52,10 @@ export default function PaymentSuccessPage() {
   }, [refreshPlan]);
 
   return (
-    <div className="bg-white min-h-screen flex flex-col">
+    <div className="bg-white min-h-screen flex flex-col overflow-x-hidden">
       <Navbar />
 
-      <main className="flex-1 flex items-center justify-center px-4 py-16">
+      <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-16">
         <div className="w-full max-w-md text-center">
           {refreshing ? (
             <div className="animate-fade-in">
