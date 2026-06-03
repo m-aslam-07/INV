@@ -60,6 +60,29 @@ export default async function handler(req, res) {
 
     const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
 
+    // URGENT PAYMENT BUG: Fetch company profile and log steps defensively.
+    console.log('company profile query');
+    let companyProfile = null;
+    try {
+      const supabase = createSupabaseServiceClient();
+      const { data, error } = await supabase
+        .from('company_profiles')
+        .select('user_id, company_name, address, gst, logo_url')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      console.log('company profile result');
+      if (error) {
+        console.warn('payment backend: failed to fetch company profile', error.message);
+      } else {
+        companyProfile = data;
+      }
+    } catch (profileError) {
+      console.log('company profile result');
+      console.warn('payment backend: company profile fetch query threw an exception', profileError?.message || String(profileError));
+    }
+
+    console.log('creating razorpay order');
     let order;
     try {
       order = await razorpay.orders.create({

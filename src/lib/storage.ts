@@ -611,21 +611,17 @@ export async function deleteTemplate(id: string, userId?: string): Promise<void>
 // COMPANY PROFILE
 // ============================================================================
 
-const PROFILE_SELECT = 'id, user_id, company_name, address, gstin, gst, logo_url, created_at, updated_at';
+const PROFILE_SELECT = 'user_id, company_name, address, gst, logo_url';
 
 function mapCompanyProfileRow(data: {
-  id: string;
   user_id: string;
   company_name: string | null;
   address: string | null;
-  gstin?: string | null;
   gst?: string | null;
   logo_url: string | null;
-  created_at: string;
-  updated_at: string;
 }): CompanyProfile {
   return {
-    id: data.id,
+    id: data.user_id, // Map id to user_id since id column does not exist
     user_id: data.user_id,
     company_name: data.company_name || '',
     email: '',
@@ -634,11 +630,11 @@ function mapCompanyProfileRow(data: {
     city: '',
     state: '',
     pin: '',
-    gstin: data.gstin || data.gst || '',
+    gstin: data.gst || '',
     pan: '',
     logo_url: data.logo_url || null,
-    created_at: data.created_at,
-    updated_at: data.updated_at,
+    created_at: '',
+    updated_at: '',
   };
 }
 
@@ -663,12 +659,11 @@ export async function saveCompanyProfile(
   // PRO: Supabase — upsert (insert or update)
   console.log('Upserting company profile', {
     table: 'company_profiles',
-    columns: ['user_id', 'company_name', 'address', 'gstin', 'gst', 'logo_url'],
+    columns: ['user_id', 'company_name', 'address', 'gst', 'logo_url'],
     payload: {
       user_id: userId,
       company_name: profile.company_name,
       address: profile.address,
-      gstin: profile.gstin,
       gst: profile.gstin,
       logo_url: profile.logo_url,
     },
@@ -680,7 +675,6 @@ export async function saveCompanyProfile(
         user_id: userId,
         company_name: profile.company_name,
         address: profile.address,
-        gstin: profile.gstin,
         gst: profile.gstin,
         logo_url: profile.logo_url,
       },
@@ -712,17 +706,43 @@ export async function getCompanyProfile(userId?: string): Promise<CompanyProfile
     columns: PROFILE_SELECT,
     userId,
   });
-  const { data, error } = await supabase
-    .from('company_profiles')
-    .select(PROFILE_SELECT)
-    .eq('user_id', userId)
-    .maybeSingle();
 
-  console.log('Company profile fetch result', { data, error });
-  if (error) throw error;
-  if (!data) return null;
+  const makeDefaultProfile = (): CompanyProfile => ({
+    id: userId || 'fallback',
+    user_id: userId || 'fallback',
+    company_name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    pin: '',
+    gstin: '',
+    pan: '',
+    logo_url: null,
+    created_at: '',
+    updated_at: '',
+  });
 
-  return mapCompanyProfileRow(data as any);
+  try {
+    const { data, error } = await supabase
+      .from('company_profiles')
+      .select(PROFILE_SELECT)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    console.log('Company profile fetch result', { data, error });
+    if (error) {
+      console.error('Failed to fetch company profile:', error);
+      return makeDefaultProfile();
+    }
+    if (!data) return makeDefaultProfile();
+
+    return mapCompanyProfileRow(data as any);
+  } catch (err) {
+    console.error('Error in getCompanyProfile catch block:', err);
+    return makeDefaultProfile();
+  }
 }
 
 // ============================================================================
