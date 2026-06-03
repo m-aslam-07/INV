@@ -100,13 +100,18 @@ function extractInvoiceData(input: InvoiceSaveInput): InvoiceData {
   return input as InvoiceData;
 }
 
-function buildInvoiceRecord(invoice: InvoiceData, userId: string, pdfUrl: string | null = null, jsonColumn: 'invoice_json' | 'invoice_data' = 'invoice_json') {
+function buildInvoiceRecord(
+  invoice: InvoiceData,
+  userId: string,
+  pdfUrl: string | null = null,
+  jsonColumn: 'invoice_json' | 'invoice_data' = 'invoice_json',
+  includeInvoiceNumber = true
+) {
   const totals = calcTotals(invoice);
   const invoiceNumber = invoice.document?.number || invoice.id || '';
-  return {
+  const record: Record<string, unknown> = {
     user_id: userId,
     template: invoice.style?.template || '',
-    invoice_number: invoiceNumber,
     client_name: invoice.client?.name || '',
     company_name: invoice.business?.name || '',
     subtotal: totals.subtotal,
@@ -117,6 +122,12 @@ function buildInvoiceRecord(invoice: InvoiceData, userId: string, pdfUrl: string
     pdf_url: pdfUrl,
     [jsonColumn]: compactInvoiceJson(invoice),
   };
+
+  if (includeInvoiceNumber) {
+    record.invoice_number = invoiceNumber;
+  }
+
+  return record;
 }
 
 function normalizeStoredInvoice(row: any): StoredInvoice {
@@ -137,8 +148,10 @@ function normalizeStoredInvoice(row: any): StoredInvoice {
     discount_total: Number(row.discount_total ?? totals?.discount ?? 0),
     tax_total: Number(row.tax_total ?? totals?.gstAmount ?? 0),
     total_amount: Number(row.total_amount ?? totals?.total ?? 0),
+    status: row.status ?? null,
     currency: (row.currency || document.currency || 'INR') as StoredInvoice['currency'],
     pdf_url: row.pdf_url ?? null,
+    invoice_data: (row.invoice_data || invoice) as InvoiceData,
     invoice_json: invoice as InvoiceData,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -147,6 +160,10 @@ function normalizeStoredInvoice(row: any): StoredInvoice {
 
 function getLocalInvoiceKey(invoice: InvoiceData): string {
   return invoice.id || invoice.document?.number || `local_${Date.now()}`;
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 function isSchemaMismatch(error: { message?: string; code?: string } | null | undefined): boolean {
@@ -168,8 +185,10 @@ async function saveInvoiceWithFallback(
   invoiceId?: string
 ): Promise<StoredInvoice | null> {
   const payloadVariants: Array<Record<string, unknown>> = [
-    buildInvoiceRecord(invoice, userId, pdfUrl, 'invoice_json'),
-    buildInvoiceRecord(invoice, userId, pdfUrl, 'invoice_data'),
+    buildInvoiceRecord(invoice, userId, pdfUrl, 'invoice_json', true),
+    buildInvoiceRecord(invoice, userId, pdfUrl, 'invoice_data', true),
+    buildInvoiceRecord(invoice, userId, pdfUrl, 'invoice_json', false),
+    buildInvoiceRecord(invoice, userId, pdfUrl, 'invoice_data', false),
     {
       user_id: userId,
       pdf_url: pdfUrl,
@@ -185,16 +204,31 @@ async function saveInvoiceWithFallback(
   let lastError: any = null;
 
   for (const payload of payloadVariants) {
+    console.log('Saving invoice', {
+      operation,
+      table: 'invoices',
+      columns: Object.keys(payload),
+      payload,
+    });
     const query = supabase.from('invoices');
     const request = operation === 'insert'
       ? query.insert(payload)
       : query.update(payload).eq('id', invoiceId!).eq('user_id', userId);
 
-    const { data, error } = await request.select(INVOICE_SELECT).maybeSingle();
+    console.log('Invoice query', {
+      operation,
+      table: 'invoices',
+      columns: '*',
+      filter: operation === 'update' ? { id: invoiceId, user_id: userId } : { user_id: userId },
+    });
+    const result = await request.select(INVOICE_SELECT).maybeSingle();
+    const { data, error } = result;
+    console.log('Insert result', result);
     if (!error) {
       return data ? normalizeStoredInvoice(data) : null;
     }
 
+    console.error('Invoice save error', error);
     lastError = error;
     if (!isSchemaMismatch(error)) {
       throw error;
@@ -238,8 +272,17 @@ export async function saveInvoice(
   const proUser = await isProUser(userId);
   const pdfUrl = options?.pdfUrl ?? null;
 
+  console.info('[storage.saveInvoice] start', {
+    userId,
+    proUser,
+    invoiceNumber: invoice.document?.number,
+    template: invoice.style?.template,
+    hasPdfUrl: Boolean(pdfUrl),
+  });
+
   // FREE: localStorage
   if (!proUser) {
+    console.info('[storage.saveInvoice] using local history cache');
     const invoices = getLocalInvoices();
     const key = getLocalInvoiceKey(invoice);
     const existing = invoices.findIndex(inv => inv.invoice_json?.id === key || inv.id === key || (inv as any).invoice_number === invoice.document?.number);
@@ -283,20 +326,45 @@ export async function saveInvoice(
 
   const invoiceKey = invoice.document?.number || invoice.id || '';
   if (invoiceKey) {
-    const { data: existing, error: existingError } = await supabase
-      .from('invoices')
-      .select(INVOICE_SELECT)
-      .eq('user_id', userId)
-      .or(`invoice_number.eq.${invoiceKey},id.eq.${invoice.id || invoiceKey}`)
-      .maybeSingle();
+    console.log('Checking invoice', invoiceKey);
+    console.info('[storage.saveInvoice] checking existing invoice', { userId, invoiceKey });
+    let existing: any = null;
 
-    if (existingError) throw existingError;
+    if (invoice.id && isUuid(invoice.id)) {
+      console.log('Checking invoice by id', { id: invoice.id, userId });
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(INVOICE_SELECT)
+        .eq('id', invoice.id)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      console.log('Invoice id lookup result', { data, error });
+      if (error && !isSchemaMismatch(error)) throw error;
+      existing = data;
+    }
+
+    if (!existing) {
+      console.log('Checking invoice by invoice_number', { invoiceNumber: invoiceKey, userId });
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(INVOICE_SELECT)
+        .eq('user_id', userId)
+        .eq('invoice_number', invoiceKey)
+        .maybeSingle();
+
+      console.log('Invoice number lookup result', { data, error });
+      if (error && !isSchemaMismatch(error)) throw error;
+      existing = data;
+    }
 
     if (existing) {
+      console.info('[storage.saveInvoice] updating existing invoice', { id: existing.id, userId });
       return saveInvoiceWithFallback('update', userId, invoice, pdfUrl ?? existing.pdf_url ?? null, existing.id);
     }
   }
 
+  console.info('[storage.saveInvoice] inserting new invoice', { userId, invoiceKey });
   return saveInvoiceWithFallback('insert', userId, invoice, pdfUrl);
 }
 export async function getInvoices(
@@ -306,12 +374,26 @@ export async function getInvoices(
 ): Promise<StoredInvoice[]> {
   const proUser = await isProUser(userId);
 
+  console.info('[storage.getInvoices] start', {
+    userId,
+    proUser,
+    limit,
+    offset,
+  });
+
   // FREE: localStorage
   if (!proUser) {
+    console.info('[storage.getInvoices] returning local invoices');
     return getLocalInvoices().slice(offset, offset + limit).map(normalizeStoredInvoice as any);
   }
 
   // PRO: Supabase
+  console.log('Fetching invoices for', userId);
+  console.log('Invoice history query', {
+    table: 'invoices',
+    columns: '*',
+    filters: { user_id: userId, offset, limit },
+  });
   const { data, error } = await supabase
     .from('invoices')
     .select(INVOICE_SELECT)
@@ -319,7 +401,22 @@ export async function getInvoices(
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (error) throw error;
+  if (error) {
+    console.error('[storage.getInvoices] Supabase query failed', {
+      userId,
+      limit,
+      offset,
+      error,
+    });
+    throw error;
+  }
+
+  console.info('[storage.getInvoices] query result', {
+    userId,
+    rows: data?.length || 0,
+    firstId: data?.[0]?.id,
+  });
+  console.log('Fetched invoices', data);
   return (data || []).map(normalizeStoredInvoice);
 }
 
@@ -331,6 +428,7 @@ export async function getInvoice(id: string, userId?: string): Promise<StoredInv
     return invoice ? normalizeStoredInvoice(invoice as any) : null;
   }
 
+  console.log('Fetching invoice', { id, userId, table: 'invoices', columns: '*' });
   const { data, error } = await supabase
     .from('invoices')
     .select(INVOICE_SELECT)
@@ -338,6 +436,7 @@ export async function getInvoice(id: string, userId?: string): Promise<StoredInv
     .eq('user_id', userId)
     .maybeSingle();
 
+  console.log('Invoice fetch result', { data, error });
   if (error) throw error;
   return data ? normalizeStoredInvoice(data) : null;
 }
@@ -368,17 +467,37 @@ export async function updateInvoice(
 
   if (!userId) return null;
 
-  const payload = buildInvoiceRecord(invoiceData, userId, invoice.pdf_url ?? null);
-  const { data, error } = await supabase
-    .from('invoices')
-    .update(payload)
-    .eq('id', id)
-    .eq('user_id', userId)
-    .select(INVOICE_SELECT)
-    .maybeSingle();
+  const payloadVariants = [
+    buildInvoiceRecord(invoiceData, userId, invoice.pdf_url ?? null, 'invoice_json', true),
+    buildInvoiceRecord(invoiceData, userId, invoice.pdf_url ?? null, 'invoice_json', false),
+  ];
 
-  if (error) throw error;
-  return data ? normalizeStoredInvoice(data) : null;
+  for (const payload of payloadVariants) {
+    console.log('Updating invoice', {
+      table: 'invoices',
+      columns: Object.keys(payload),
+      id,
+      userId,
+      payload,
+    });
+    const result = await supabase
+      .from('invoices')
+      .update(payload)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select(INVOICE_SELECT)
+      .maybeSingle();
+
+    console.log('Invoice update result', result);
+    if (!result.error) {
+      return result.data ? normalizeStoredInvoice(result.data) : null;
+    }
+
+    console.error('Invoice update error', result.error);
+    if (!isSchemaMismatch(result.error)) throw result.error;
+  }
+
+  return null;
 }
 
 export async function deleteInvoice(id: string, userId?: string): Promise<void> {
@@ -393,12 +512,14 @@ export async function deleteInvoice(id: string, userId?: string): Promise<void> 
   }
 
   // PRO: Supabase
+  console.log('Deleting invoice', { id, userId, table: 'invoices', columns: ['id', 'user_id'] });
   const { error } = await supabase
     .from('invoices')
     .delete()
     .eq('id', id)
     .eq('user_id', userId);
 
+  console.log('Invoice delete result', { error });
   if (error) throw error;
 }
 
@@ -490,13 +611,14 @@ export async function deleteTemplate(id: string, userId?: string): Promise<void>
 // COMPANY PROFILE
 // ============================================================================
 
-const PROFILE_SELECT = 'id, user_id, company_name, address, gst, logo_url, created_at, updated_at';
+const PROFILE_SELECT = 'id, user_id, company_name, address, gstin, gst, logo_url, created_at, updated_at';
 
 function mapCompanyProfileRow(data: {
   id: string;
   user_id: string;
   company_name: string | null;
   address: string | null;
+  gstin?: string | null;
   gst?: string | null;
   logo_url: string | null;
   created_at: string;
@@ -512,7 +634,7 @@ function mapCompanyProfileRow(data: {
     city: '',
     state: '',
     pin: '',
-    gstin: data.gst || '',
+    gstin: data.gstin || data.gst || '',
     pan: '',
     logo_url: data.logo_url || null,
     created_at: data.created_at,
@@ -539,6 +661,18 @@ export async function saveCompanyProfile(
   }
 
   // PRO: Supabase — upsert (insert or update)
+  console.log('Upserting company profile', {
+    table: 'company_profiles',
+    columns: ['user_id', 'company_name', 'address', 'gstin', 'gst', 'logo_url'],
+    payload: {
+      user_id: userId,
+      company_name: profile.company_name,
+      address: profile.address,
+      gstin: profile.gstin,
+      gst: profile.gstin,
+      logo_url: profile.logo_url,
+    },
+  });
   const { data, error } = await supabase
     .from('company_profiles')
     .upsert(
@@ -546,6 +680,7 @@ export async function saveCompanyProfile(
         user_id: userId,
         company_name: profile.company_name,
         address: profile.address,
+        gstin: profile.gstin,
         gst: profile.gstin,
         logo_url: profile.logo_url,
       },
@@ -553,6 +688,7 @@ export async function saveCompanyProfile(
     )
     .select(PROFILE_SELECT)
     .single();
+  console.log('Company profile upsert result', { data, error });
   if (error) throw error;
   return data ? mapCompanyProfileRow(data as any) : null;
 }
@@ -571,12 +707,18 @@ export async function getCompanyProfile(userId?: string): Promise<CompanyProfile
   }
 
   // PRO: Supabase
+  console.log('Fetching company profile', {
+    table: 'company_profiles',
+    columns: PROFILE_SELECT,
+    userId,
+  });
   const { data, error } = await supabase
     .from('company_profiles')
     .select(PROFILE_SELECT)
     .eq('user_id', userId)
     .maybeSingle();
 
+  console.log('Company profile fetch result', { data, error });
   if (error) throw error;
   if (!data) return null;
 

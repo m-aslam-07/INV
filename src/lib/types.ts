@@ -99,8 +99,10 @@ export interface StoredInvoice {
   discount_total: number;
   tax_total: number;
   total_amount: number;
+  status?: string | null;
   currency: 'INR' | 'USD' | 'EUR' | 'GBP';
   pdf_url: string | null;
+  invoice_data?: InvoiceData;
   invoice_json: InvoiceData;
   created_at: string;
   updated_at: string;

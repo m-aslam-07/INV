@@ -10,7 +10,7 @@ import { StepDetails } from './steps/StepDetails';
 import { StepLineItems } from './steps/StepLineItems';
 import { StepTaxDiscount } from './steps/StepTaxDiscount';
 import {
-  ArrowLeft, ArrowRight, Download, Share2, Clock, Trash2,
+  ArrowLeft, ArrowRight, Download, Trash2,
   Loader2, Check,
 } from 'lucide-react';
 
@@ -95,29 +95,17 @@ export function FormPanel({ onDownload, downloading, downloadSuccess, onShowHist
         ) : (
           /* Step 5: Download + small buttons */
           <div className="space-y-2">
-            <button onClick={onDownload} disabled={downloading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg py-3 font-medium transition-colors flex items-center justify-center gap-2 shadow-sm shadow-blue-200">
-              {downloading
-                ? <><Loader2 size={16} className="animate-spin" /> Generating PDF...</>
-                : downloadSuccess
-                ? <><Check size={16} /> Downloaded! ✓</>
-                : <><Download size={16} /> Download PDF</>}
-            </button>
             <div className="flex gap-2">
-              <ProGated feature="Shareable link">
-                <button onClick={handleCopyLink}
-                  className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 hover:text-gray-800 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                  <Share2 size={12} /> Share link
-                </button>
-              </ProGated>
-              <ProGated feature="Invoice history">
-                <button onClick={onShowHistory}
-                  className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 hover:text-gray-800 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                  <Clock size={12} /> History
-                </button>
-              </ProGated>
+              <button onClick={onDownload} disabled={downloading}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg py-3 font-medium transition-colors flex items-center justify-center gap-2 shadow-sm shadow-blue-200">
+                {downloading
+                  ? <><Loader2 size={16} className="animate-spin" /> Generating PDF...</>
+                  : downloadSuccess
+                  ? <><Check size={16} /> Downloaded! ✓</>
+                  : <><Download size={16} /> Download PDF</>}
+              </button>
               <button onClick={() => setShowClearModal(true)}
-                className="flex-1 flex items-center justify-center gap-1.5 text-xs text-gray-600 hover:text-red-600 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                className="w-28 flex-none flex items-center justify-center gap-1.5 text-xs text-gray-600 hover:text-red-600 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                 <Trash2 size={12} /> Clear
               </button>
             </div>

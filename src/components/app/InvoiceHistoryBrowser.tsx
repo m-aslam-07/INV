@@ -11,6 +11,15 @@ import type { StoredInvoice } from '../../lib/types';
 
 const PAGE_SIZE = 12;
 
+const actionButtonClass = 'inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg border px-2 sm:px-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap w-full';
+
+const actionButtonTone = {
+  neutral: 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50',
+  blue: 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100',
+  green: 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100',
+  red: 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100',
+} as const;
+
 function nextInvoiceNumber(): string {
   try {
     const last = localStorage.getItem('sk_last_inv');
@@ -24,14 +33,62 @@ function nextInvoiceNumber(): string {
 
 function getInvoiceDateLabel(date: string): string {
   try {
-    return new Date(date).toLocaleDateString(undefined, {
+    return new Intl.DateTimeFormat('en-GB', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-    });
+    }).format(new Date(date));
   } catch {
     return date;
   }
+}
+
+function getInvoiceAmountLabel(amount: number, currency: StoredInvoice['currency']): string {
+  if (!Number.isFinite(amount) || amount <= 0) return '';
+
+  try {
+    return formatCurrency(amount, currency);
+  } catch {
+    return '';
+  }
+}
+
+function HistoryCardActions({
+  onPreview,
+  onEdit,
+  onDuplicate,
+  onDownload,
+  onDelete,
+}: {
+  onPreview: () => void;
+  onEdit: () => void;
+  onDuplicate: () => void;
+  onDownload: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="grid w-full gap-2 sm:max-w-[420px] sm:justify-self-end">
+      <div className="grid grid-cols-3 gap-2">
+        <button onClick={onPreview} className={`${actionButtonClass} ${actionButtonTone.neutral}`}>
+          <Eye size={14} /> <span className="truncate">Preview</span>
+        </button>
+        <button onClick={onEdit} className={`${actionButtonClass} ${actionButtonTone.blue}`}>
+          <PencilLine size={14} /> <span className="truncate">Edit</span>
+        </button>
+        <button onClick={onDuplicate} className={`${actionButtonClass} ${actionButtonTone.neutral}`}>
+          <Copy size={14} /> <span className="truncate">Duplicate</span>
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <button onClick={onDownload} className={`${actionButtonClass} ${actionButtonTone.green}`}>
+          <Download size={14} /> <span className="truncate">PDF Download</span>
+        </button>
+        <button onClick={onDelete} className={`${actionButtonClass} ${actionButtonTone.red}`}>
+          <Trash2 size={14} /> <span className="truncate">Delete</span>
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function InvoicePreview({ entry }: { entry: StoredInvoice }) {
@@ -181,79 +238,44 @@ export function InvoiceHistoryBrowser({ compact = false, onClose }: { compact?: 
             </button>
           </div>
         ) : (
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-2.5 sm:space-y-3">
             {rows.map((entry) => {
-              const totalLabel = formatCurrency(entry.total_amount, entry.currency);
+              const amountLabel = getInvoiceAmountLabel(entry.total_amount, entry.currency);
               const templateLabel = entry.template || entry.invoice_json.style.template;
+              const dateLabel = getInvoiceDateLabel(entry.created_at);
               return (
                 <article
                   key={entry.id}
-                  className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm shadow-gray-100 transition-shadow hover:shadow-md"
+                  className="rounded-2xl border border-gray-100 bg-white px-3 py-3 sm:px-4 sm:py-3.5 shadow-sm shadow-gray-100 transition-shadow hover:shadow-md"
                 >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 uppercase tracking-wider">
-                        <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-600">{entry.invoice_number}</span>
-                        <span>{templateLabel}</span>
+                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)] sm:gap-3">
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                        <h3 className="truncate text-[15px] font-semibold tracking-tight text-gray-900 sm:text-base">
+                          {entry.invoice_number}
+                        </h3>
+                        {amountLabel && (
+                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 whitespace-nowrap">
+                            {amountLabel}
+                          </span>
+                        )}
                       </div>
-                      <h3 className="mt-3 text-lg font-semibold text-gray-900 truncate">
-                        {entry.client_name || 'Unnamed client'}
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500 truncate">
-                        {entry.company_name || 'Company name not set'}
-                      </p>
-                      <div className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-                        <div className="rounded-xl bg-gray-50 px-3 py-2">
-                          <div className="text-[10px] uppercase tracking-wide text-gray-400">Total</div>
-                          <div className="mt-1 font-semibold text-gray-900">{totalLabel}</div>
-                        </div>
-                        <div className="rounded-xl bg-gray-50 px-3 py-2">
-                          <div className="text-[10px] uppercase tracking-wide text-gray-400">Currency</div>
-                          <div className="mt-1 font-semibold text-gray-900">{entry.currency}</div>
-                        </div>
-                        <div className="rounded-xl bg-gray-50 px-3 py-2">
-                          <div className="text-[10px] uppercase tracking-wide text-gray-400">Created</div>
-                          <div className="mt-1 font-semibold text-gray-900">{getInvoiceDateLabel(entry.created_at)}</div>
-                        </div>
-                        <div className="rounded-xl bg-gray-50 px-3 py-2">
-                          <div className="text-[10px] uppercase tracking-wide text-gray-400">Updated</div>
-                          <div className="mt-1 font-semibold text-gray-900">{getInvoiceDateLabel(entry.updated_at)}</div>
-                        </div>
+                      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] sm:text-sm text-gray-500">
+                        <span className="whitespace-nowrap">{dateLabel}</span>
+                        <span className="text-gray-300">•</span>
+                        <span className="inline-flex max-w-full items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-gray-600 truncate">
+                          {templateLabel}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 lg:min-w-[18rem] lg:justify-end">
-                      <button
-                        onClick={() => setSelectedEntry(entry)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                      >
-                        <Eye size={14} /> Preview
-                      </button>
-                      <button
-                        onClick={() => handleEdit(entry)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
-                      >
-                        <PencilLine size={14} /> Edit
-                      </button>
-                      <button
-                        onClick={() => handleDuplicate(entry)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                      >
-                        <Copy size={14} /> Duplicate
-                      </button>
-                      <button
-                        onClick={() => handleDownload(entry)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-100"
-                      >
-                        <Download size={14} /> Download PDF
-                      </button>
-                      <button
-                        onClick={() => handleDelete(entry)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
-                      >
-                        <Trash2 size={14} /> Delete
-                      </button>
-                    </div>
+                    <HistoryCardActions
+                      onPreview={() => setSelectedEntry(entry)}
+                      onEdit={() => handleEdit(entry)}
+                      onDuplicate={() => handleDuplicate(entry)}
+                      onDownload={() => handleDownload(entry)}
+                      onDelete={() => handleDelete(entry)}
+                    />
                   </div>
                 </article>
               );

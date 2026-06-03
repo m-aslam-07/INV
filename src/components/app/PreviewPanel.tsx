@@ -218,13 +218,14 @@ export function PreviewPanel() {
             >
               <div className="relative" style={{ width: mobilePageWidth, height: mobilePageHeight }} id="invoice-preview-wrapper">
                 <div
-                  id="invoice-preview-target"
                   className="absolute left-0 top-0 bg-white shadow-xl rounded-lg p-4 sm:p-8"
                   style={{ width: '210mm', minHeight: '297mm', transform: `scale(${scale})`, transformOrigin: 'top left' }}
                 >
-                  <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading Template...</div>}>
-                    <Template state={state} isPro={isPro} />
-                  </Suspense>
+                  <div id="invoice-preview-target" style={{ width: '100%' }}>
+                    <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading Template...</div>}>
+                      <Template state={state} isPro={isPro} />
+                    </Suspense>
+                  </div>
                 </div>
               </div>
             </div>
@@ -253,13 +254,14 @@ export function PreviewPanel() {
               style={{ transform: `scale(${scale})`, transformOrigin: 'top center', width: '210mm', minHeight: '297mm' }}
             >
               <div
-                id="invoice-preview-target"
                 className="bg-white shadow-xl rounded-lg p-4 sm:p-8"
                 style={{ width: '210mm', minHeight: '297mm' }}
               >
-                <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading Template...</div>}>
-                  <Template state={state} isPro={isPro} />
-                </Suspense>
+                <div id="invoice-preview-target" style={{ width: '100%' }}>
+                  <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400">Loading Template...</div>}>
+                    <Template state={state} isPro={isPro} />
+                  </Suspense>
+                </div>
               </div>
             </div>
             {/* Logo size popover */}

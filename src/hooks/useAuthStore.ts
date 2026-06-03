@@ -48,9 +48,6 @@ async function upsertFreeUser(user: AuthUser): Promise<void> {
     id: user.id,
     email: user.email,
     plan: 'free',
-    payment_provider: null,
-    subscription_id: null,
-    subscription_status: 'inactive',
   }, { onConflict: 'id' });
 }
 

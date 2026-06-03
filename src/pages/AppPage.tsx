@@ -13,6 +13,9 @@ import { LoginModal } from '../components/auth/LoginModal';
 import { loadFromHash } from '../utils/shareLink';
 import { buildInvoiceFilename, downloadInvoicePdfFromElement } from '../lib/invoicePdf';
 import { Zap, Sparkles, LogOut, LogIn } from 'lucide-react';
+import { Share2, Clock } from 'lucide-react';
+import { ProGated } from '../components/app/ProGated';
+import { generateShareLink } from '../utils/shareLink';
 
 export default function AppPage() {
   const [searchParams] = useSearchParams();
@@ -82,13 +85,44 @@ export default function AppPage() {
           </div>
           <span className="font-semibold text-sm text-gray-900">Strikin</span>
         </Link>
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+        <div className="flex items-center gap-2 sm:gap-3 flex-nowrap justify-end min-w-0">
           {!isPro && (
             <button onClick={() => useAuthStore.getState().openUpgradeModal('Pro features')}
               className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-3 py-2 rounded-lg font-medium hover:bg-blue-100 transition-colors">
               <Sparkles size={12} /> Upgrade to Pro
             </button>
           )}
+          {/* Share & History (desktop) */}
+          <div className="hidden sm:flex items-center gap-2">
+            <ProGated feature="Shareable link">
+              <button onClick={() => { const link = generateShareLink(store.getFullState()); navigator.clipboard.writeText(link); addToast('Link copied to clipboard'); }}
+                className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                <Share2 size={14} /> Share
+              </button>
+            </ProGated>
+
+            <ProGated feature="Invoice history">
+              <button onClick={() => setShowHistory(!showHistory)}
+                className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                <Clock size={14} /> History
+              </button>
+            </ProGated>
+          </div>
+
+          {/* Mobile compact icons */}
+          <div className="flex sm:hidden items-center gap-1"> 
+            <ProGated feature="Shareable link">
+              <button onClick={() => { const link = generateShareLink(store.getFullState()); navigator.clipboard.writeText(link); addToast('Link copied to clipboard'); }}
+                title="Share" className="p-2 rounded-md text-gray-600 hover:bg-gray-50">
+                <Share2 size={16} />
+              </button>
+            </ProGated>
+            <ProGated feature="Invoice history">
+              <button onClick={() => setShowHistory(!showHistory)} title="History" className="p-2 rounded-md text-gray-600 hover:bg-gray-50">
+                <Clock size={16} />
+              </button>
+            </ProGated>
+          </div>
           {user ? (
             <button onClick={signOut} className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-900 px-2 py-2">
               <LogOut size={14} /> Sign out
@@ -126,15 +160,27 @@ export default function AppPage() {
         </div>
 
         {/* Right panel */}
-        <div className={`flex-1 min-h-0 ${activeTab !== 'preview' ? 'hidden lg:block' : ''}`}>
+        <div className={`flex-1 min-h-0 min-w-0 ${activeTab !== 'preview' ? 'hidden lg:block' : ''}`}>
           <PreviewPanel />
         </div>
 
         {/* History panel */}
         {showHistory && (
-          <div className="w-full sm:w-80 border-l border-gray-100 bg-white flex-shrink-0 max-w-full">
-            <HistoryPanel onClose={() => setShowHistory(false)} />
-          </div>
+          <>
+            <div
+              className="fixed inset-0 z-[90] bg-black/40 lg:hidden"
+              onClick={() => setShowHistory(false)}
+              aria-hidden="true"
+            />
+            <div className="fixed inset-0 z-[100] flex lg:hidden bg-white">
+              <div className="h-full w-full overflow-hidden bg-white">
+                <HistoryPanel onClose={() => setShowHistory(false)} />
+              </div>
+            </div>
+            <div className="hidden lg:block h-full w-[clamp(360px,32vw,420px)] min-w-[360px] max-w-[420px] shrink-0 border-l border-gray-100 bg-white overflow-hidden">
+              <HistoryPanel onClose={() => setShowHistory(false)} />
+            </div>
+          </>
         )}
       </div>
 
