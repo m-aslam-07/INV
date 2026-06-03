@@ -90,12 +90,18 @@ async function renderPdfFromTarget(
   // 2. Deep-clone the source so we don't mutate the live preview
   const clone = source.cloneNode(true) as HTMLElement;
 
-  // 3. Create a clean off-screen host at exact A4 width
+  // 3. Capture padding — must match the preview wrapper's p-8 (32px) so that
+  //    templates using negative margins (e.g. -32px for full-bleed headers)
+  //    don't extend outside the captured area and get clipped.
+  const CAPTURE_PAD = 32; // px — matches preview's Tailwind p-8
+  const CAPTURE_TOTAL_WIDTH = A4_WIDTH_PX + CAPTURE_PAD * 2; // 858px
+
+  // 4. Create a clean off-screen host wide enough to hold clone + padding
   const host = document.createElement('div');
   host.style.position = 'fixed';
   host.style.left = '-20000px';
   host.style.top = '0';
-  host.style.width = `${A4_WIDTH_PX}px`;
+  host.style.width = `${CAPTURE_TOTAL_WIDTH}px`;
   host.style.backgroundColor = '#ffffff';
   host.style.zIndex = '-9999';
   host.style.pointerEvents = 'none';
@@ -103,16 +109,18 @@ async function renderPdfFromTarget(
   host.setAttribute('aria-hidden', 'true');
   document.body.appendChild(host);
 
-  // 4. Strip any transforms, padding, zoom artifacts from the clone
+  // 5. Style the clone: border-box keeps the inner content at A4_WIDTH_PX
+  //    while the padding gives decorative borders/shadows breathing room.
   clone.style.transform = 'none';
   clone.style.transformOrigin = 'top left';
   clone.style.position = 'relative';
   clone.style.left = '0';
   clone.style.top = '0';
-  clone.style.width = `${A4_WIDTH_PX}px`;
+  clone.style.boxSizing = 'border-box';
+  clone.style.width = `${CAPTURE_TOTAL_WIDTH}px`;
   clone.style.minHeight = `${A4_HEIGHT_PX}px`;
   clone.style.margin = '0';
-  clone.style.padding = '0';
+  clone.style.padding = `${CAPTURE_PAD}px`;
   clone.style.overflow = 'visible';
   clone.style.backgroundColor = '#ffffff';
 
@@ -133,13 +141,12 @@ async function renderPdfFromTarget(
     // 7. Small settling delay for layout
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-    // 8. Measure actual content height
+    // 8. Measure actual content dimensions (clone now includes padding)
     const contentWidth = clone.scrollWidth;
     const contentHeight = clone.scrollHeight;
 
-    // 9. If content is wider than A4, we'll let html2canvas capture at natural width
-    //    and then scale it down to fit A4 in the PDF
-    const captureWidth = Math.max(contentWidth, A4_WIDTH_PX);
+    // 9. Capture at the padded width — never smaller than CAPTURE_TOTAL_WIDTH
+    const captureWidth = Math.max(contentWidth, CAPTURE_TOTAL_WIDTH);
     const captureHeight = Math.max(contentHeight, A4_HEIGHT_PX);
 
     // 10. Capture with html2canvas — high scale, PNG (no compression artifacts)
@@ -161,10 +168,16 @@ async function renderPdfFromTarget(
     // 11. Convert to PNG data URL (lossless — no text artifacts)
     const imgData = canvas.toDataURL('image/png');
 
-    // 12. Calculate PDF dimensions
-    //     Scale image to fit A4 width exactly
+    // 12. PDF layout — the captured image already contains 32px (~8.5mm) of
+    //     whitespace padding on all sides. We add a small page margin (5mm)
+    //     for printer safety. Total effective margin ≈ 13.5mm per side.
+    const PAGE_MARGIN = 5; // mm — small printer-safe margin
+    const usableWidth = A4_WIDTH_MM - PAGE_MARGIN * 2;   // 200mm
+    const usableHeight = A4_HEIGHT_MM - PAGE_MARGIN * 2; // 287mm
+
+    // Scale image to fit within the usable width, preserving aspect ratio
     const imgAspect = canvas.height / canvas.width;
-    const pdfImgWidth = A4_WIDTH_MM;
+    const pdfImgWidth = usableWidth;
     const pdfImgHeight = pdfImgWidth * imgAspect;
 
     // 13. Create PDF and slice into pages
@@ -174,20 +187,20 @@ async function renderPdfFromTarget(
       format: 'a4',
     });
 
-    if (pdfImgHeight <= A4_HEIGHT_MM) {
-      // Single page — content fits
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfImgWidth, pdfImgHeight);
+    if (pdfImgHeight <= usableHeight) {
+      // Single page — content fits within margins
+      pdf.addImage(imgData, 'PNG', PAGE_MARGIN, PAGE_MARGIN, pdfImgWidth, pdfImgHeight);
     } else {
-      // Multi-page — slice the image across pages
-      const totalPages = Math.ceil(pdfImgHeight / A4_HEIGHT_MM);
+      // Multi-page — slice the image across pages, respecting margins
+      const totalPages = Math.ceil(pdfImgHeight / usableHeight);
 
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) pdf.addPage();
 
-        // The trick: we place the full image at a negative Y offset
-        // so that each page shows the correct slice
-        const yOffset = -(page * A4_HEIGHT_MM);
-        pdf.addImage(imgData, 'PNG', 0, yOffset, pdfImgWidth, pdfImgHeight);
+        // Place the full image at a negative Y offset so each page
+        // shows the correct slice, shifted down by the top margin
+        const yOffset = PAGE_MARGIN - page * usableHeight;
+        pdf.addImage(imgData, 'PNG', PAGE_MARGIN, yOffset, pdfImgWidth, pdfImgHeight);
       }
     }
 
