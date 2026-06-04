@@ -6,7 +6,7 @@ import { LoginModal } from '../components/auth/LoginModal';
 import { useAuthStore } from '../hooks/useAuthStore';
 import {
   Code2, Palette, Camera, Building2, PenTool, TrendingUp, GraduationCap, Stethoscope, Hammer, Calculator,
-  Receipt, Smartphone, FileText, Star, ChevronDown, ChevronUp, Zap, Languages, QrCode, Layout, Eye, UserX,
+  Receipt, Smartphone, FileText, Star, ChevronDown, ChevronUp, Zap, Languages, History, Layout, Eye, UserX,
   ArrowRight
 } from 'lucide-react';
 
@@ -32,7 +32,7 @@ const professions = [
 
 const features = [
   { icon: <Receipt size={20} />, title: 'GST Auto-Split', desc: 'Auto-calculates CGST, SGST, or IGST based on states' },
-  { icon: <QrCode size={20} />, title: 'UPI QR Code', desc: 'Add UPI payment QR code to your invoices' },
+  { icon: <History size={20} />, title: 'Invoice History', desc: 'Save and manage all your past invoices in one place' },
   { icon: <Languages size={20} />, title: 'Amount in Words', desc: 'Auto-generates total in Indian number system' },
   { icon: <Layout size={20} />, title: '24 Templates', desc: 'Professional templates for every style' },
   { icon: <Eye size={20} />, title: 'Live Preview', desc: 'See changes in real-time as you type' },
@@ -193,9 +193,9 @@ export default function LandingPage() {
             <div className="bg-white border-2 border-blue-600 rounded-xl p-6 relative">
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium">Most popular</span>
               <h3 className="font-semibold text-gray-900 mb-1">Pro</h3>
-              <p className="text-3xl font-bold text-gray-900 mb-4">₹199<span className="text-sm font-normal text-gray-400">/mo</span></p>
+              <p className="text-3xl font-bold text-gray-900 mb-4">₹149<span className="text-sm font-normal text-gray-400">/mo</span></p>
               <ul className="space-y-2 mb-6 text-sm text-gray-600">
-                <li>✓ Everything in Free</li><li>✓ Logo upload</li><li>✓ Shareable link</li><li>✓ UPI QR code</li><li>✓ Invoice history</li>
+                <li>✓ Everything in Free</li><li>✓ Logo upload</li><li>✓ Shareable link</li><li>✓ Invoice history</li>
               </ul>
               <Link to={upgradeLink} state={!user ? { from: { pathname: '/upgrade' } } : undefined} className="block text-center py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Upgrade to Pro</Link>
             </div>

@@ -121,11 +121,6 @@ export default function LoginPage() {
                 Sign up
               </Link>
             </p>
-            <div className="pt-3 border-t border-gray-100">
-              <p className="text-xs text-gray-400">
-                Demo PRO account: <span className="font-mono text-gray-500">pro1232@gmail.com</span> / <span className="font-mono text-gray-500">proaccount123</span>
-              </p>
-            </div>
           </div>
         </div>
       </main>

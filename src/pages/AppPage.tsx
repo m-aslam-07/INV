@@ -12,7 +12,7 @@ import { UpgradeModal } from '../components/app/UpgradeModal';
 import { LoginModal } from '../components/auth/LoginModal';
 import { loadFromHash } from '../utils/shareLink';
 import { buildInvoiceFilename, downloadInvoicePdfFromElement } from '../lib/invoicePdf';
-import { Zap, Sparkles, LogOut, LogIn } from 'lucide-react';
+import { Sparkles, LogOut, LogIn } from 'lucide-react';
 import { Share2, Clock } from 'lucide-react';
 import { ProGated } from '../components/app/ProGated';
 import { generateShareLink } from '../utils/shareLink';
@@ -80,9 +80,7 @@ export default function AppPage() {
       {/* App Navbar */}
       <header className="min-h-14 h-auto md:h-12 border-b border-gray-100 flex items-center justify-between px-3 py-3 md:px-4 md:py-0 flex-shrink-0 bg-white gap-3">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-            <Zap size={12} className="text-white" />
-          </div>
+          <img src="/strikin-logo.png" alt="Strikin Logo" className="w-6 h-6 object-contain" />
           <span className="font-semibold text-sm text-gray-900">Strikin</span>
         </Link>
         <div className="flex items-center gap-2 sm:gap-3 flex-nowrap justify-end min-w-0">

@@ -13,10 +13,41 @@ interface AuthListenerPayload {
   user: AuthUser | null;
   plan: AccountPlan;
   isPro: boolean;
+  subscriptionStatus: string | null;
+  subscriptionStart: string | null;
+  subscriptionEnd: string | null;
 }
 
 let authListenerCleanup: (() => void) | null = null;
 let initializePromise: Promise<(() => void) | null> | null = null;
+
+export interface SubscriptionStatusInfo {
+  plan?: string | null;
+  subscription_status?: string | null;
+  subscription_end?: string | null;
+}
+
+export function isProUser(info: SubscriptionStatusInfo | null | undefined): boolean {
+  if (!info) return false;
+  if (info.plan !== 'pro') return false;
+  if (info.subscription_status !== 'active') return false;
+  if (!info.subscription_end) return false;
+  return new Date(info.subscription_end).getTime() > Date.now();
+}
+
+export function isSubscriptionActive(info: SubscriptionStatusInfo | null | undefined): boolean {
+  if (!info) return false;
+  if (info.subscription_status !== 'active') return false;
+  if (!info.subscription_end) return false;
+  return new Date(info.subscription_end).getTime() > Date.now();
+}
+
+export function hasExpiredSubscription(info: SubscriptionStatusInfo | null | undefined): boolean {
+  if (!info) return false;
+  if (info.subscription_status === 'expired') return true;
+  if (!info.subscription_end) return false;
+  return new Date(info.subscription_end).getTime() <= Date.now();
+}
 
 function syncCloudMode(plan: AccountPlan): void {
   try {
@@ -32,15 +63,49 @@ function syncCloudMode(plan: AccountPlan): void {
   }
 }
 
-async function fetchUserPlan(userId: string): Promise<AccountPlan> {
-  const { data, error } = await supabase
-    .from('users')
-    .select('plan')
-    .eq('id', userId)
-    .maybeSingle();
+interface UserSubscriptionData {
+  plan: AccountPlan;
+  subscription_status: string | null;
+  subscription_start: string | null;
+  subscription_end: string | null;
+}
 
-  if (error) throw error;
-  return data?.plan === 'pro' ? 'pro' : 'free';
+async function checkAndFetchUserPlan(userId: string): Promise<UserSubscriptionData> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  if (!token) {
+    throw new Error('No authenticated session token');
+  }
+
+  const response = await fetch('/api/payment/check-subscription', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to verify subscription on server');
+  }
+
+  const result = await response.json();
+
+  console.log('[subscription] Current plan:', result.plan);
+  console.log('[subscription] Current subscription_status:', result.subscription_status);
+  console.log('[subscription] subscription_start:', result.subscription_start);
+  console.log('[subscription] subscription_end:', result.subscription_end);
+
+  const isExpired = result.subscription_end && result.plan === 'free' && result.subscription_status === 'expired';
+  console.log('[subscription] Expiration check result: isExpired =', isExpired);
+
+  return {
+    plan: result.plan as AccountPlan,
+    subscription_status: result.subscription_status,
+    subscription_start: result.subscription_start,
+    subscription_end: result.subscription_end,
+  };
 }
 
 async function upsertFreeUser(user: AuthUser): Promise<void> {
@@ -53,14 +118,28 @@ async function upsertFreeUser(user: AuthUser): Promise<void> {
 
 async function syncAuthSession(sessionUser: { id: string; email: string } | null): Promise<AuthListenerPayload> {
   if (!sessionUser) {
-    return { user: null, plan: 'guest', isPro: false };
+    return {
+      user: null,
+      plan: 'guest',
+      isPro: false,
+      subscriptionStatus: null,
+      subscriptionStart: null,
+      subscriptionEnd: null,
+    };
   }
 
   const user: AuthUser = { id: sessionUser.id, email: sessionUser.email };
   let plan: AccountPlan = 'free';
+  let subscriptionStatus: string | null = null;
+  let subscriptionStart: string | null = null;
+  let subscriptionEnd: string | null = null;
 
   try {
-    plan = await fetchUserPlan(user.id);
+    const sub = await checkAndFetchUserPlan(user.id);
+    plan = sub.plan;
+    subscriptionStatus = sub.subscription_status;
+    subscriptionStart = sub.subscription_start;
+    subscriptionEnd = sub.subscription_end;
   } catch (error) {
     console.warn('Failed to fetch user plan, defaulting to free:', error);
   }
@@ -74,13 +153,27 @@ async function syncAuthSession(sessionUser: { id: string; email: string } | null
     }
   }
 
-  return { user, plan, isPro: plan === 'pro' };
+  const isPro = plan === 'pro' &&
+                subscriptionStatus === 'active' &&
+                (subscriptionEnd ? new Date(subscriptionEnd).getTime() > Date.now() : false);
+
+  return {
+    user,
+    plan,
+    isPro,
+    subscriptionStatus,
+    subscriptionStart,
+    subscriptionEnd,
+  };
 }
 
 interface AuthState {
   user: AuthUser | null;
   plan: AccountPlan;
   isPro: boolean;
+  subscriptionStatus: string | null;
+  subscriptionStart: string | null;
+  subscriptionEnd: string | null;
   loading: boolean;
   error: string | null;
   loginModalOpen: boolean;
@@ -104,6 +197,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   plan: 'guest',
   isPro: false,
+  subscriptionStatus: null,
+  subscriptionStart: null,
+  subscriptionEnd: null,
   loading: true,
   error: null,
   loginModalOpen: false,
@@ -132,16 +228,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: synced.user,
         plan: synced.plan,
         isPro: synced.isPro,
+        subscriptionStatus: synced.subscriptionStatus,
+        subscriptionStart: synced.subscriptionStart,
+        subscriptionEnd: synced.subscriptionEnd,
         loading: false,
       });
     } catch (error) {
-      // Log full error for debugging (includes Supabase response)
-      // Keep user-facing message concise but store raw error in console
       console.error('Auth signIn error:', error);
       const message = getAuthErrorMessage(error);
-      // In development, expose raw error for diagnostics
       const devMessage = import.meta.env.DEV ? `Debug: ${JSON.stringify(error)}` : message;
-      set({ error: devMessage, loading: false, user: null, plan: 'guest', isPro: false });
+      set({
+        error: devMessage,
+        loading: false,
+        user: null,
+        plan: 'guest',
+        isPro: false,
+        subscriptionStatus: null,
+        subscriptionStart: null,
+        subscriptionEnd: null,
+      });
       throw toAuthError(error);
     }
   },
@@ -159,7 +264,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       if (error) throw error;
 
-      // If email confirmation is required, user won't be fully signed in yet
       const needsConfirmation = !data.session;
 
       if (data.session && data.user) {
@@ -169,6 +273,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user: { id: data.user.id, email: data.user.email! },
           plan: 'free',
           isPro: false,
+          subscriptionStatus: null,
+          subscriptionStart: null,
+          subscriptionEnd: null,
           loading: false,
         });
       }
@@ -176,7 +283,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { needsConfirmation };
     } catch (error) {
       const message = getAuthErrorMessage(error);
-      set({ error: message, loading: false, user: null, plan: 'guest', isPro: false });
+      set({
+        error: message,
+        loading: false,
+        user: null,
+        plan: 'guest',
+        isPro: false,
+        subscriptionStatus: null,
+        subscriptionStart: null,
+        subscriptionEnd: null,
+      });
       throw toAuthError(error);
     }
   },
@@ -198,11 +314,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             user: synced.user,
             plan: synced.plan,
             isPro: synced.isPro,
+            subscriptionStatus: synced.subscriptionStatus,
+            subscriptionStart: synced.subscriptionStart,
+            subscriptionEnd: synced.subscriptionEnd,
             loading: false,
           });
         } else {
           syncCloudMode('guest');
-          set({ user: null, plan: 'guest', isPro: false, loading: false });
+          set({
+            user: null,
+            plan: 'guest',
+            isPro: false,
+            subscriptionStatus: null,
+            subscriptionStart: null,
+            subscriptionEnd: null,
+            loading: false,
+          });
         }
 
         const { data } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -214,10 +341,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 user: synced.user,
                 plan: synced.plan,
                 isPro: synced.isPro,
+                subscriptionStatus: synced.subscriptionStatus,
+                subscriptionStart: synced.subscriptionStart,
+                subscriptionEnd: synced.subscriptionEnd,
               });
             } else {
               syncCloudMode('guest');
-              set({ user: null, plan: 'guest', isPro: false });
+              set({
+                user: null,
+                plan: 'guest',
+                isPro: false,
+                subscriptionStatus: null,
+                subscriptionStart: null,
+                subscriptionEnd: null,
+              });
             }
           } catch (error) {
             console.error('Auth state listener failed:', error);
@@ -235,7 +372,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } catch (error) {
         const message = getAuthErrorMessage(error);
         console.error('Auth initialization failed:', error);
-        set({ error: message, user: null, plan: 'guest', isPro: false, loading: false });
+        set({
+          error: message,
+          user: null,
+          plan: 'guest',
+          isPro: false,
+          subscriptionStatus: null,
+          subscriptionStart: null,
+          subscriptionEnd: null,
+          loading: false,
+        });
         authListenerCleanup = null;
         initializePromise = null;
         return null;
@@ -257,19 +403,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.error("Sign out failed", e);
     } finally {
       syncCloudMode('guest');
-      set({ user: null, plan: 'guest', isPro: false, loading: false });
+      set({
+        user: null,
+        plan: 'guest',
+        isPro: false,
+        subscriptionStatus: null,
+        subscriptionStart: null,
+        subscriptionEnd: null,
+        loading: false,
+      });
     }
   },
 
-  // Refresh user plan (call after successful payment)
   refreshPlan: async () => {
     const { user } = get();
     if (!user) return;
 
     try {
-      const plan = await fetchUserPlan(user.id);
-      syncCloudMode(plan);
-      set({ plan, isPro: plan === 'pro' });
+      const sub = await checkAndFetchUserPlan(user.id);
+      syncCloudMode(sub.plan);
+      const isPro = sub.plan === 'pro' &&
+                    sub.subscription_status === 'active' &&
+                    (sub.subscription_end ? new Date(sub.subscription_end).getTime() > Date.now() : false);
+      set({
+        plan: sub.plan,
+        isPro,
+        subscriptionStatus: sub.subscription_status,
+        subscriptionStart: sub.subscription_start,
+        subscriptionEnd: sub.subscription_end,
+      });
     } catch (error) {
       console.error('Failed to refresh plan:', error);
     }

@@ -53,48 +53,61 @@ export default async function handler(req, res) {
 
     const supabase = createSupabaseServiceClient();
 
-    const { data: paymentLog, error: paymentLogError } = await supabase
-      .from('payment_logs')
-      .select('id, user_id')
-      .eq('provider', 'razorpay')
-      .eq('order_id', razorpay_order_id)
-      .maybeSingle();
+    let targetUserId = null;
+    let planType = 'monthly';
 
-    let targetUserId = paymentLog?.user_id || null;
+    try {
+      if (!keyId) {
+        return res.status(500).json({ error: 'Razorpay is not configured' });
+      }
 
-    if (paymentLogError) {
-      console.warn('payment_logs lookup failed during Razorpay verification', {
-        error: paymentLogError.message,
+      const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+      const order = await razorpay.orders.fetch(razorpay_order_id);
+
+      targetUserId = order?.notes?.userId || null;
+      planType = order?.notes?.planType || 'monthly';
+    } catch (fetchError) {
+      console.error('Failed to fetch Razorpay order for verification', {
+        message: fetchError?.message || String(fetchError),
         orderId: razorpay_order_id,
       });
     }
 
+    // Fallback lookup via payment logs if Razorpay API failed to retrieve it
     if (!targetUserId) {
-      try {
-        if (!keyId) {
-          return res.status(500).json({ error: 'Razorpay is not configured' });
-        }
+      const { data: paymentLog, error: paymentLogError } = await supabase
+        .from('payment_logs')
+        .select('id, user_id')
+        .eq('provider', 'razorpay')
+        .eq('order_id', razorpay_order_id)
+        .maybeSingle();
 
-        const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
-        const order = await razorpay.orders.fetch(razorpay_order_id);
+      targetUserId = paymentLog?.user_id || null;
 
-        targetUserId = order?.notes?.userId || null;
-
-        if (!targetUserId) {
-          return res.status(400).json({ error: 'Unknown order reference' });
-        }
-      } catch (fetchError) {
-        console.error('Failed to fetch Razorpay order for verification', {
-          message: fetchError?.message || String(fetchError),
+      if (paymentLogError) {
+        console.warn('payment_logs lookup failed during Razorpay verification', {
+          error: paymentLogError.message,
           orderId: razorpay_order_id,
         });
-        return res.status(400).json({ error: 'Unknown order reference' });
       }
+    }
+
+    if (!targetUserId) {
+      return res.status(400).json({ error: 'Unknown order reference' });
     }
 
     if (targetUserId !== user.id) {
       return res.status(403).json({ error: 'Order does not belong to authenticated user' });
     }
+
+    // Fetch the payment log for update checks
+    const { data: paymentLog } = await supabase
+      .from('payment_logs')
+      .select('id')
+      .eq('provider', 'razorpay')
+      .eq('order_id', razorpay_order_id)
+      .maybeSingle()
+      .catch(() => ({ data: null }));
 
     if (paymentLog?.id) {
       await supabase
@@ -141,12 +154,18 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'User profile missing' });
     }
 
+    // Calculate subscription_end duration (30 days for monthly, 365 days for annual)
+    const days = planType === 'annual' ? 365 : 30;
+    const subscriptionEnd = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
     const { error: planUpdateError } = await supabase
       .from('users')
       .update({
         plan: 'pro',
         payment_provider: 'razorpay',
         subscription_status: 'active',
+        subscription_start: new Date().toISOString(),
+        subscription_end: subscriptionEnd,
         updated_at: new Date().toISOString(),
       })
       .eq('id', user.id);

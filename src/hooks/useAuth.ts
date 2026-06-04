@@ -26,10 +26,11 @@ export function useAuth() {
 export function useUserPlan() {
   const plan = useAuthStore((state) => state.plan);
   const loading = useAuthStore((state) => state.loading);
+  const isPro = useAuthStore((state) => state.isPro);
 
   return useMemo(() => ({
     plan: plan === 'pro' ? 'pro' : 'free',
     loading,
-    isPro: plan === 'pro',
-  }), [plan, loading]);
+    isPro,
+  }), [plan, loading, isPro]);
 }

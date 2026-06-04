@@ -14,7 +14,7 @@ export function PrivacyPage() {
           <h2 className="text-lg font-semibold text-gray-900 mt-6">2. Authentication</h2>
           <p>If you choose to create an account for Pro features, we collect your email address through Supabase authentication. This is used solely for account management.</p>
           <h2 className="text-lg font-semibold text-gray-900 mt-6">3. Payments</h2>
-          <p>Payments are processed through Lemon Squeezy. We do not store any payment card information. Please refer to Lemon Squeezy's privacy policy for payment data handling.</p>
+          <p>Payments are processed through Razorpay. We do not store any payment card information. Please refer to Razorpay's privacy policy for payment data handling.</p>
           <h2 className="text-lg font-semibold text-gray-900 mt-6">4. Cookies</h2>
           <p>We use localStorage for saving your invoice drafts and preferences. No tracking cookies are used.</p>
           <h2 className="text-lg font-semibold text-gray-900 mt-6">5. Contact</h2>
@@ -39,7 +39,7 @@ export function TermsPage() {
           <h2 className="text-lg font-semibold text-gray-900 mt-6">2. Usage</h2>
           <p>You may use Strikin to create invoices for legitimate business purposes. You are responsible for the accuracy of information entered.</p>
           <h2 className="text-lg font-semibold text-gray-900 mt-6">3. Pro Subscription</h2>
-          <p>Pro features require a paid subscription. Subscriptions are billed monthly or annually through Lemon Squeezy. You may cancel at any time.</p>
+          <p>Pro features require a paid subscription. Subscriptions are billed monthly or annually through Razorpay. You may cancel at any time.</p>
           <h2 className="text-lg font-semibold text-gray-900 mt-6">4. Data</h2>
           <p>Your data is stored locally in your browser. We are not responsible for data loss due to browser cache clearing or device changes.</p>
           <h2 className="text-lg font-semibold text-gray-900 mt-6">5. Limitation of Liability</h2>

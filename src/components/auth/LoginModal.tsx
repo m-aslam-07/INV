@@ -60,7 +60,7 @@ export function LoginModal() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-shadow text-sm"
-                  placeholder="pro1232@gmail.com"
+                  placeholder="you@example.com"
                   required
                 />
               </div>
@@ -103,10 +103,6 @@ export function LoginModal() {
                 Sign up
               </Link>
             </p>
-          </div>
-
-          <div className="mt-6 text-center text-xs text-gray-400">
-            For demo: Use pro1232@gmail.com / proaccount123
           </div>
         </div>
       </div>

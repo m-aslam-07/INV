@@ -73,30 +73,26 @@ export default async function handler(req, res) {
       .eq('order_id', orderId)
       .maybeSingle();
 
-    let userId = paymentLog?.user_id || null;
+    let userId = null;
+    let planType = 'monthly';
 
-    if (paymentLogError) {
-      console.warn('payment_logs lookup failed during Razorpay webhook', {
-        error: paymentLogError.message,
-        orderId,
-      });
-    }
-
-    if (!userId) {
-      if (!keyId || !keySecret) {
-        return res.status(200).json({ received: true });
-      }
-
+    if (keyId && keySecret) {
       try {
         const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
         const order = await razorpay.orders.fetch(orderId);
         userId = order?.notes?.userId || null;
+        planType = order?.notes?.planType || 'monthly';
       } catch (fetchError) {
         console.error('Failed to fetch Razorpay order in webhook', {
           message: fetchError?.message || String(fetchError),
           orderId,
         });
       }
+    }
+
+    // Fallback to lookup from payment_logs
+    if (!userId) {
+      userId = paymentLog?.user_id || null;
     }
 
     if (!userId) {
@@ -134,12 +130,18 @@ export default async function handler(req, res) {
       return res.status(200).json({ received: true });
     }
 
+    // Calculate subscription_end duration (30 days for monthly, 365 days for annual)
+    const days = planType === 'annual' ? 365 : 30;
+    const subscriptionEnd = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
     const { error: planUpdateError } = await supabase
       .from('users')
       .update({
         plan: 'pro',
         payment_provider: 'razorpay',
         subscription_status: 'active',
+        subscription_start: new Date().toISOString(),
+        subscription_end: subscriptionEnd,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId);

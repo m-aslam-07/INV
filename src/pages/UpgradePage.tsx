@@ -4,18 +4,16 @@ import { Navbar } from '../components/landing/Navbar';
 import { Footer } from '../components/landing/Footer';
 import { useAuthStore } from '../hooks/useAuthStore';
 import { openRazorpayCheckout } from '../services/razorpay';
-import { redirectToLemonSqueezyCheckout } from '../services/lemonsqueezy';
 import {
-  Check, Sparkles, CreditCard, Globe, IndianRupee, Loader2, Shield,
+  Check, Sparkles, CreditCard, Loader2, Shield,
   ArrowRight, Crown, Zap
 } from 'lucide-react';
 
 type PlanPeriod = 'monthly' | 'annual';
-type PaymentProvider = 'razorpay' | 'lemonsqueezy';
 
 const PRICING = {
-  monthly: { inr: 149, usd: 4, paise: 14900 },
-  annual: { inr: 1499, usd: 39, paise: 149900 },
+  monthly: { inr: 149, paise: 14900 },
+  annual: { inr: 1499, paise: 149900 },
 };
 
 const PRO_FEATURES = [
@@ -30,7 +28,6 @@ const PRO_FEATURES = [
 
 export default function UpgradePage() {
   const [period, setPeriod] = useState<PlanPeriod>('monthly');
-  const [provider, setProvider] = useState<PaymentProvider>('razorpay');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -101,41 +98,28 @@ export default function UpgradePage() {
     setError('');
 
     try {
-      if (provider === 'razorpay') {
-        await openRazorpayCheckout({
-          amount: PRICING[period].paise,
-          currency: 'INR',
-          planType: period,
-          onSuccess: () => {
-            navigate('/payment-success?provider=razorpay');
-          },
-          onError: (err) => {
-            setError(err.message || 'Payment failed');
-            setLoading(false);
-          },
-          onDismiss: () => {
-            setLoading(false);
-          },
-        });
-      } else {
-        try {
-          await redirectToLemonSqueezyCheckout({
-            planType: period,
-          });
-        } catch {
-          throw new Error('Unable to start checkout. Please try again.');
-        }
-      }
+      await openRazorpayCheckout({
+        amount: PRICING[period].paise,
+        currency: 'INR',
+        planType: period,
+        onSuccess: () => {
+          navigate('/payment-success?provider=razorpay');
+        },
+        onError: (err) => {
+          setError(err.message || 'Payment failed');
+          setLoading(false);
+        },
+        onDismiss: () => {
+          setLoading(false);
+        },
+      });
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
       setLoading(false);
     }
   };
 
-  const price = provider === 'razorpay'
-    ? `₹${PRICING[period].inr.toLocaleString('en-IN')}`
-    : `$${PRICING[period].usd}`;
-
+  const price = `₹${PRICING[period].inr.toLocaleString('en-IN')}`;
   const periodLabel = period === 'annual' ? '/year' : '/month';
 
   return (
@@ -150,7 +134,7 @@ export default function UpgradePage() {
               <Sparkles size={14} /> Upgrade to Pro
             </span>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Unlock all premium features</h1>
-            <p className="text-gray-500">Choose your plan and payment method</p>
+            <p className="text-gray-500">Choose your plan and subscribe instantly</p>
           </div>
 
           {/* Plan Period Toggle */}
@@ -166,7 +150,7 @@ export default function UpgradePage() {
               >
                 Monthly
               </button>
-                <button
+              <button
                 onClick={() => setPeriod('annual')}
                 className={`px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
                   period === 'annual'
@@ -178,8 +162,7 @@ export default function UpgradePage() {
                 <span className="bg-green-100 text-green-700 text-xs px-1.5 py-0.5 rounded-full font-medium">
                   {(() => {
                     const inrSave = PRICING.monthly.inr * 12 - PRICING.annual.inr;
-                    const usdSave = PRICING.monthly.usd * 12 - PRICING.annual.usd;
-                    return `Save ${provider === 'razorpay' ? `₹${inrSave}` : `$${usdSave}`}`;
+                    return `Save ₹${inrSave}`;
                   })()}
                 </span>
               </button>
@@ -203,72 +186,17 @@ export default function UpgradePage() {
 
             {/* Payment Selection */}
             <div className="space-y-4">
-              {/* Payment provider buttons */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-700 mb-2">Payment method</p>
-
-                <button
-                  id="provider-razorpay"
-                  onClick={() => setProvider('razorpay')}
-                  className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
-                    provider === 'razorpay'
-                      ? 'border-blue-600 bg-blue-50/50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    provider === 'razorpay' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    <IndianRupee size={20} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 text-sm">Razorpay</p>
-                    <p className="text-xs text-gray-500">UPI, Cards, Netbanking (India)</p>
-                  </div>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    provider === 'razorpay' ? 'border-blue-600' : 'border-gray-300'
-                  }`}>
-                    {provider === 'razorpay' && <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />}
-                  </div>
-                </button>
-
-                <button
-                  id="provider-lemonsqueezy"
-                  onClick={() => setProvider('lemonsqueezy')}
-                  className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
-                    provider === 'lemonsqueezy'
-                      ? 'border-blue-600 bg-blue-50/50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    provider === 'lemonsqueezy' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    <Globe size={20} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 text-sm">LemonSqueezy</p>
-                    <p className="text-xs text-gray-500">International cards, PayPal</p>
-                  </div>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    provider === 'lemonsqueezy' ? 'border-blue-600' : 'border-gray-300'
-                  }`}>
-                    {provider === 'lemonsqueezy' && <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />}
-                  </div>
-                </button>
-              </div>
-
               {/* Price display */}
-              <div className="bg-gray-50 rounded-xl p-4 text-center">
-                <p className="text-3xl font-bold text-gray-900">
+              <div className="bg-gray-50 rounded-xl p-6 text-center border border-gray-100">
+                <p className="text-sm font-medium text-gray-500 mb-1">Subscription Price</p>
+                <p className="text-4xl font-bold text-gray-900">
                   {price}<span className="text-base font-normal text-gray-400">{periodLabel}</span>
                 </p>
                 {period === 'annual' && (
-                  <p className="text-xs text-green-600 mt-1 font-medium">
+                  <p className="text-xs text-green-600 mt-2 font-medium bg-green-50 py-1 px-3 rounded-full inline-block">
                     {(() => {
                       const inrSave = PRICING.monthly.inr * 12 - PRICING.annual.inr;
-                      const usdSave = PRICING.monthly.usd * 12 - PRICING.annual.usd;
-                      return `Best value — save ${provider === 'razorpay' ? `₹${inrSave}` : `$${usdSave}`} per year`;
+                      return `Best value — save ₹${inrSave} per year`;
                     })()}
                   </p>
                 )}
@@ -300,7 +228,7 @@ export default function UpgradePage() {
               </button>
 
               <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
-                <Shield size={12} /> Secure payment · Cancel anytime
+                <Shield size={12} /> Secure payment via Razorpay · Cancel anytime
               </div>
             </div>
           </div>

@@ -30,7 +30,11 @@ export function UpgradeModal() {
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
             <p className="text-sm text-blue-700">
               <Sparkles size={14} className="inline mr-1" />
-              <strong>{upgradeFeature}</strong> is a Pro feature
+              {upgradeFeature.toLowerCase() === 'pro features' || upgradeFeature.toLowerCase() === 'pro feature' ? (
+                <span>Unlock all <strong>premium Pro features</strong> today!</span>
+              ) : (
+                <span><strong>{upgradeFeature}</strong> is a Pro feature</span>
+              )}
             </p>
           </div>
         )}
@@ -57,7 +61,7 @@ export function UpgradeModal() {
               Popular
             </span>
             <h4 className="font-semibold text-gray-900 mb-1">Pro</h4>
-            <p className="text-sm text-gray-500 mb-3">₹199/mo</p>
+            <p className="text-sm text-gray-500 mb-3">₹149/mo</p>
             <ul className="space-y-2">
               {[...freeFeatures, ...proFeatures].map(f => (
                 <li key={f} className="flex items-center gap-2 text-xs text-gray-600">
@@ -74,10 +78,10 @@ export function UpgradeModal() {
           onClick={closeUpgradeModal}
           className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-3 rounded-xl font-medium transition-colors"
         >
-          Upgrade to Pro — ₹199/mo <ArrowRight size={14} />
+          Upgrade to Pro — ₹149/mo <ArrowRight size={14} />
         </Link>
         <p className="text-center text-xs text-gray-400">
-          Or save ₹889/yr with annual plan at ₹1,499/yr
+          Or save ₹289/yr with annual plan at ₹1,499/yr
         </p>
       </div>
     </Modal>

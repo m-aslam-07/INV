@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Zap, LogIn, LogOut } from 'lucide-react';
+import { Menu, X, LogIn, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../hooks/useAuthStore';
 
 export function Navbar() {
@@ -25,9 +25,7 @@ export function Navbar() {
     <nav className={`sticky top-0 z-50 bg-white border-b border-gray-100 transition-shadow duration-200 ${scrolled ? 'shadow-sm' : ''}`}>
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
-            <Zap size={14} className="text-white" />
-          </div>
+          <img src="/strikin-logo.png" alt="Strikin Logo" className="w-7 h-7 object-contain" />
           <span className="font-semibold text-gray-900">Strikin</span>
         </Link>
 

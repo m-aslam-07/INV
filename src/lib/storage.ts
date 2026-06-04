@@ -244,7 +244,7 @@ async function isProUser(userId: string | undefined): Promise<boolean> {
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('plan')
+      .select('plan, subscription_status, subscription_end')
       .eq('id', userId)
       .maybeSingle();
 
@@ -253,7 +253,12 @@ async function isProUser(userId: string | undefined): Promise<boolean> {
       return false;
     }
 
-    return data?.plan === 'pro';
+    if (!data || data.plan !== 'pro') return false;
+
+    const isActive = data.subscription_status === 'active';
+    const isNotExpired = data.subscription_end ? new Date(data.subscription_end).getTime() > Date.now() : false;
+
+    return isActive && isNotExpired;
   } catch (error) {
     console.warn('Plan lookup threw, defaulting to local storage path:', error);
     return false;

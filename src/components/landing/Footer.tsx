@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { Zap } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -8,9 +7,7 @@ export function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
-                <Zap size={14} className="text-white" />
-              </div>
+              <img src="/strikin-logo.png" alt="Strikin Logo" className="w-7 h-7 object-contain" />
               <span className="font-semibold text-gray-900">Strikin</span>
             </div>
             <p className="text-sm text-gray-500">Free GST invoice generator for Indian freelancers</p>

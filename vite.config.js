@@ -3,8 +3,7 @@ import { defineConfig } from 'vite';
 import razorpayCreateOrder from './api/payment/razorpay-create-order.js';
 import razorpayVerify from './api/payment/razorpay-verify.js';
 import razorpayWebhook from './api/payment/razorpay-webhook.js';
-import lemonsqueezyCheckout from './api/payment/lemonsqueezy-checkout.js';
-import lemonsqueezyWebhook from './api/payment/lemonsqueezy-webhook.js';
+import checkSubscription from './api/payment/check-subscription.js';
 
 function createResponseAdapter(res) {
   const adapter = {
@@ -55,8 +54,7 @@ function paymentApiMiddleware() {
     ['/api/payment/razorpay-create-order', razorpayCreateOrder],
     ['/api/payment/razorpay-verify', razorpayVerify],
     ['/api/payment/razorpay-webhook', razorpayWebhook],
-    ['/api/payment/lemonsqueezy-checkout', lemonsqueezyCheckout],
-    ['/api/payment/lemonsqueezy-webhook', lemonsqueezyWebhook],
+    ['/api/payment/check-subscription', checkSubscription],
   ]);
 
   return {
