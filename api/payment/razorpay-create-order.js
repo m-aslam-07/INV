@@ -83,6 +83,14 @@ export default async function handler(req, res) {
     }
 
     console.log('creating razorpay order');
+    console.log("[RAZORPAY DEBUG]", {
+      keyIdPresent: !!process.env.RAZORPAY_KEY_ID,
+      keySecretPresent: !!process.env.RAZORPAY_KEY_SECRET,
+      amount,
+      currency,
+      receipt,
+      planType,
+    });
     let order;
     try {
       order = await razorpay.orders.create({
@@ -95,13 +103,16 @@ export default async function handler(req, res) {
         },
       });
     } catch (error) {
-      console.log('error', error);
-      console.log('error.message', error?.message);
-      console.log('error.description', error?.description);
-      console.log('error.error', error?.error);
-      console.log('error.response', error?.response);
-      console.log('error.statusCode', error?.statusCode);
-      console.log('JSON.stringify(error, null, 2)', JSON.stringify(error, null, 2));
+      console.error(
+        "[RAZORPAY FULL ERROR]",
+        JSON.stringify(error, null, 2)
+      );
+
+      console.error(error);
+      console.error(error.message);
+      console.error(error.response);
+      console.error(error.error);
+      console.error(error.description);
 
       console.error('Razorpay SDK order creation failed', {
         error,
