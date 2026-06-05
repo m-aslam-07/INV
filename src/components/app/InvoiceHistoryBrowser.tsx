@@ -108,7 +108,7 @@ export function InvoiceHistoryBrowser({ compact = false, onClose }: { compact?: 
   const navigate = useNavigate();
   const store = useInvoiceStore();
   const { addToast } = useToastStore();
-  const { loadHistory, deleteEntry, restoreEntry, history, loading, error } = useInvoiceStorage();
+  const { loadHistory, deleteEntry, restoreEntry, history, loading, error, loaded } = useInvoiceStorage();
   const [selectedEntry, setSelectedEntry] = useState<StoredInvoice | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
@@ -119,12 +119,17 @@ export function InvoiceHistoryBrowser({ compact = false, onClose }: { compact?: 
 
   useEffect(() => {
     let mounted = true;
-    loadHistory({ limit: PAGE_SIZE, offset: 0, force: true }).then((data) => {
-      if (!mounted) return;
-      setHasMore(data.length === PAGE_SIZE);
-    });
+    if (!loaded) {
+      console.log('[history-debug] opening history');
+      loadHistory({ limit: PAGE_SIZE, offset: 0, force: true }).then((data) => {
+        if (!mounted) return;
+        setHasMore(data.length === PAGE_SIZE);
+      });
+    } else {
+      setHasMore(history.length >= PAGE_SIZE);
+    }
     return () => { mounted = false; };
-  }, [loadHistory]);
+  }, [loaded, loadHistory, history.length]);
 
   const handleLoadMore = async () => {
     setLoadingMore(true);
