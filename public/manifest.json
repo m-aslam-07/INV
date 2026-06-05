@@ -1,0 +1,15 @@
+{
+  "short_name": "Strikin",
+  "name": "Strikin GST Invoice Generator",
+  "icons": [
+    {
+      "src": "/strikin-logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/app",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "display": "standalone"
+}

@@ -16,6 +16,7 @@ import { Sparkles, LogOut, LogIn } from 'lucide-react';
 import { Share2, Clock } from 'lucide-react';
 import { ProGated } from '../components/app/ProGated';
 import { generateShareLink } from '../utils/shareLink';
+import SEO from '../components/SEO';
 
 export default function AppPage() {
   const [searchParams] = useSearchParams();
@@ -77,6 +78,11 @@ export default function AppPage() {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-white overflow-x-hidden">
+      <SEO
+        title="GST Invoice Generator App | Free Online Invoicing - Strikin"
+        description="Create and download professional GST invoices online for free. Custom templates, CGST, SGST, IGST calculation, UPI dynamic routing, and fast local drafts."
+        keywords="gst invoice generator, online invoice generator, invoicing app, create GST invoice, dynamic invoice editor, India GST calculator"
+      />
       {/* App Navbar */}
       <header className="min-h-14 h-auto md:h-12 border-b border-gray-100 flex items-center justify-between px-3 py-3 md:px-4 md:py-0 flex-shrink-0 bg-white gap-3">
         <Link to="/" className="flex items-center gap-2">

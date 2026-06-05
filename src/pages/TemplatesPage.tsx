@@ -4,6 +4,7 @@ import { Footer } from '../components/landing/Footer';
 import { getAllTemplates } from '../components/invoice/templateRegistry';
 import { useInvoiceStore } from '../hooks/useInvoiceStore';
 import { Suspense, useMemo } from 'react';
+import SEO from '../components/SEO';
 
 function TemplateThumbnail({ template }: { template: any }) {
   const baseState = useMemo(() => useInvoiceStore.getState(), []);
@@ -45,6 +46,30 @@ export default function TemplatesPage() {
 
   return (
     <div className="bg-white min-h-screen overflow-x-hidden">
+      <SEO
+        title="Professional GST Invoice Templates | Download Free - Strikin"
+        description="Explore 24 unique, professional, and GST-ready invoice templates. Choose the style that fits your business, customize and generate PDF invoices instantly."
+        keywords="invoice templates, GST invoice template, professional invoice designs, freelancer invoice templates, download invoice pdf"
+        canonical="https://www.strikin.tech/templates"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://www.strikin.tech"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Templates",
+              "item": "https://www.strikin.tech/templates"
+            }
+          ]
+        }}
+      />
       <Navbar />
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">

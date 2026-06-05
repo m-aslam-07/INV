@@ -5,6 +5,7 @@ import { Footer } from '../components/landing/Footer';
 import { useAuthStore } from '../hooks/useAuthStore';
 import { getAuthErrorMessage } from '../lib/authErrors';
 import { Mail, Lock, Zap, ArrowRight, Loader2 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -35,6 +36,12 @@ export default function LoginPage() {
 
   return (
     <div className="bg-white min-h-screen flex flex-col overflow-x-hidden">
+      <SEO
+        title="Sign In to Your Account | Strikin"
+        description="Log in to your Strikin account to access your business profile, invoice history, custom templates, and premium pro features."
+        keywords="sign in, login, invoice app access"
+        canonical="https://www.strikin.tech/login"
+      />
       <Navbar />
 
       <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-16">

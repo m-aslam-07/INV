@@ -5,6 +5,7 @@ import { Footer } from '../components/landing/Footer';
 import { useAuthStore } from '../hooks/useAuthStore';
 import { getAuthErrorMessage } from '../lib/authErrors';
 import { Mail, Lock, Zap, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -52,6 +53,12 @@ export default function SignupPage() {
   if (emailSent) {
     return (
       <div className="bg-white min-h-screen flex flex-col overflow-x-hidden">
+        <SEO
+          title="Confirm Your Account - Check Your Email | Strikin"
+          description="We've sent a verification link to your email. Click it to activate your Strikin invoicing account."
+          keywords="confirm account, sign up confirmation, verify email"
+          canonical="https://www.strikin.tech/signup"
+        />
         <Navbar />
         <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-16">
           <div className="w-full max-w-md text-center">
@@ -77,6 +84,12 @@ export default function SignupPage() {
 
   return (
     <div className="bg-white min-h-screen flex flex-col overflow-x-hidden">
+      <SEO
+        title="Create Your Account | Strikin"
+        description="Register for a free Strikin account to save your invoice data, access premium templates, and manage invoices in one dashboard."
+        keywords="sign up, create account, register invoicing software"
+        canonical="https://www.strikin.tech/signup"
+      />
       <Navbar />
 
       <main className="flex-1 flex items-center justify-center px-4 py-12 sm:py-16">

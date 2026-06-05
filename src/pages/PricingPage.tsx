@@ -3,6 +3,7 @@ import { Navbar } from '../components/landing/Navbar';
 import { Footer } from '../components/landing/Footer';
 import { useAuthStore } from '../hooks/useAuthStore';
 import { Check, X, Crown, Sparkles } from 'lucide-react';
+import SEO from '../components/SEO';
 
 const features = [
   { name: 'All templates', free: true, pro: true },
@@ -27,6 +28,30 @@ export default function PricingPage() {
 
   return (
     <div className="bg-white min-h-screen overflow-x-hidden">
+      <SEO
+        title="Affordable Pricing Plans for Pro Invoicing | Strikin"
+        description="Explore simple and transparent pricing plans for Strikin. Start free or upgrade to Pro for premium templates, custom logo upload, and invoice history."
+        keywords="pricing plans, pro invoicing software, invoice management features, gst billing pricing"
+        canonical="https://www.strikin.tech/pricing"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://www.strikin.tech"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Pricing",
+              "item": "https://www.strikin.tech/pricing"
+            }
+          ]
+        }}
+      />
       <Navbar />
       <section className="py-14 sm:py-16 px-4">
         <div className="max-w-4xl mx-auto">

@@ -1,6 +1,7 @@
 import { Navbar } from '../components/landing/Navbar';
 import { Footer } from '../components/landing/Footer';
 import { Link } from 'react-router-dom';
+import SEO from '../components/SEO';
 
 const posts = [
   { slug: 'gst-invoice-guide', title: 'Complete Guide to GST Invoicing for Indian Freelancers', excerpt: 'Everything you need to know about creating GST-compliant invoices — CGST, SGST, IGST explained.', date: '2025-12-15' },
@@ -11,6 +12,30 @@ const posts = [
 export default function BlogPage() {
   return (
     <div className="bg-white min-h-screen overflow-x-hidden">
+      <SEO
+        title="Invoicing & GST Tax Blog for Indian Freelancers | Strikin"
+        description="Learn about GST compliance, tax tips for self-employed professionals, and invoicing best practices to get paid faster as a freelancer in India."
+        keywords="freelancer blog, gst invoicing guide, tax tips india, invoice management advice"
+        canonical="https://www.strikin.tech/blog"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "name": "Home",
+              "item": "https://www.strikin.tech"
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "name": "Blog",
+              "item": "https://www.strikin.tech/blog"
+            }
+          ]
+        }}
+      />
       <Navbar />
       <section className="py-16 px-4">
         <div className="max-w-3xl mx-auto">

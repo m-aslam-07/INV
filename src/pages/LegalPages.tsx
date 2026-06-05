@@ -1,9 +1,16 @@
 import { Navbar } from '../components/landing/Navbar';
 import { Footer } from '../components/landing/Footer';
+import SEO from '../components/SEO';
 
 export function PrivacyPage() {
   return (
     <div className="bg-white min-h-screen overflow-x-hidden">
+      <SEO
+        title="Privacy Policy | Strikin"
+        description="Read the Privacy Policy of Strikin. Learn how we handle your invoice details, credentials, and local storage data."
+        keywords="privacy policy, invoice app privacy, data safety"
+        canonical="https://www.strikin.tech/legal/privacy"
+      />
       <Navbar />
       <div className="max-w-3xl mx-auto px-4 py-16">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Privacy Policy</h1>
@@ -29,6 +36,12 @@ export function PrivacyPage() {
 export function TermsPage() {
   return (
     <div className="bg-white min-h-screen overflow-x-hidden">
+      <SEO
+        title="Terms of Service | Strikin"
+        description="Read the Terms of Service for Strikin. Understand your rights, billing terms, and usage conditions for our invoicing software."
+        keywords="terms of service, billing terms, legal agreements"
+        canonical="https://www.strikin.tech/legal/terms"
+      />
       <Navbar />
       <div className="max-w-3xl mx-auto px-4 py-16">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Terms of Service</h1>

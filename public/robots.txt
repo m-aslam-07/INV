@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /payment-success
+Disallow: /payment-cancel
+
+Sitemap: https://www.strikin.tech/sitemap.xml

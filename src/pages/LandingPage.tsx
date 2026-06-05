@@ -4,6 +4,7 @@ import { Navbar } from '../components/landing/Navbar';
 import { Footer } from '../components/landing/Footer';
 import { LoginModal } from '../components/auth/LoginModal';
 import { useAuthStore } from '../hooks/useAuthStore';
+import SEO from '../components/SEO';
 import {
   Code2, Palette, Camera, Building2, PenTool, TrendingUp, GraduationCap, Stethoscope, Hammer, Calculator,
   Receipt, Smartphone, FileText, Star, ChevronDown, ChevronUp, Zap, Languages, History, Layout, Eye, UserX,
@@ -57,6 +58,79 @@ export default function LandingPage() {
 
   return (
     <div className="bg-white min-h-screen overflow-x-hidden">
+      <SEO
+        title="Strikin - Free GST Invoice Generator & Freelancer Invoice Software"
+        description="Strikin is a free GST Invoice Generator and Invoice Management platform built for Indian freelancers, agencies, and small businesses. Auto-calculate CGST, SGST, IGST and generate UPI invoices."
+        keywords="GST invoice generator, invoice generator, freelancer invoice software, small business invoicing, invoice management, CGST, SGST, IGST, UPI, free invoice, India"
+        schema={[
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Strikin",
+            "url": "https://www.strikin.tech",
+            "description": "Free GST Invoice Generator & Freelancer Invoice Software for Indian Freelancers, Agencies, and Small Businesses."
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Strikin",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "All",
+            "url": "https://www.strikin.tech",
+            "description": "GST Invoice Generator and Invoice Management Platform.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "INR"
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Strikin",
+            "url": "https://www.strikin.tech",
+            "logo": "https://www.strikin.tech/strikin-logo.png"
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Is Strikin free?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes! The core invoice generator is completely free — unlimited invoices, all templates, full GST calculation, and PDF download at no cost."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is my data saved anywhere?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Your data is saved locally in your browser. Nothing is sent to any server. Your invoices stay on your device."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I add my logo?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Logo upload is available on the Pro plan. Your logo appears on every invoice you create."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is it GST compliant?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Strikin auto-calculates CGST, SGST, and IGST based on your state and client state, with proper tax breakdowns."
+                }
+              }
+            ]
+          }
+        ]}
+      />
       <Navbar />
 
       {/* Hero */}
@@ -66,10 +140,10 @@ export default function LandingPage() {
             🇮🇳 Built for India · GST-compliant
           </span>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-4">
-            Professional GST invoices<br />in 2 minutes
+            Free GST Invoice Generator &<br />Freelancer Invoice Software
           </h1>
           <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto mb-8">
-            The only invoice tool built specifically for Indian freelancers. Auto-calculates CGST, SGST, IGST. Supports UPI, GSTIN, Amount in words. Free forever.
+            An intuitive GST Invoice Generator and Invoice Management platform built for Indian freelancers, agencies, and consultants. Easily handle Small Business Invoicing with CGST/SGST breakdowns. Free forever.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
             <Link to="/app" className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-6 py-3 font-medium transition-colors inline-flex items-center justify-center gap-2">
