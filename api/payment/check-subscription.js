@@ -35,23 +35,13 @@ export default async function handler(req, res) {
     let subscription_status = userData?.subscription_status || null;
     let subscription_start = userData?.subscription_start || null;
     let subscription_end = userData?.subscription_end || null;
-
-    console.log('[subscription] Server-side check for user:', user.id);
-    console.log('[subscription] Current plan:', plan);
-    console.log('[subscription] Current subscription_status:', subscription_status);
-    console.log('[subscription] subscription_start:', subscription_start);
-    console.log('[subscription] subscription_end:', subscription_end);
-
     // 2. Expiration check
     if (subscription_end && plan === 'pro') {
       const endTime = new Date(subscription_end).getTime();
       const nowTime = Date.now();
       const isExpired = nowTime > endTime;
 
-      console.log('[subscription] Expiration check result: isExpired =', isExpired);
-
       if (isExpired) {
-        console.log('[subscription] Subscription expired! Downgrading user on server...');
         const { error: updateError } = await supabase
           .from('users')
           .update({
@@ -64,7 +54,6 @@ export default async function handler(req, res) {
         if (updateError) {
           console.error('[subscription] Failed to update user to expired plan:', updateError);
         } else {
-          console.log('[subscription] User downgraded successfully to free.');
           plan = 'free';
           subscription_status = 'expired';
         }

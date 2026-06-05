@@ -94,16 +94,17 @@ export default async function handler(req, res) {
           planType,
         },
       });
-    } catch (createError) {
-      const safeError = {
-        message: createError?.message || 'Unknown Razorpay error',
-        statusCode: createError?.statusCode,
-        errorCode: createError?.error?.code,
-        errorDescription: createError?.error?.description,
-      };
+    } catch (error) {
+      console.log('error', error);
+      console.log('error.message', error?.message);
+      console.log('error.description', error?.description);
+      console.log('error.error', error?.error);
+      console.log('error.response', error?.response);
+      console.log('error.statusCode', error?.statusCode);
+      console.log('JSON.stringify(error, null, 2)', JSON.stringify(error, null, 2));
 
       console.error('Razorpay SDK order creation failed', {
-        safeError,
+        error,
         userId: user.id,
         planType,
         amount,
@@ -111,7 +112,7 @@ export default async function handler(req, res) {
 
       return res.status(502).json({
         error: 'Failed to create Razorpay order',
-        details: process.env.NODE_ENV === 'development' ? safeError : undefined,
+        details: process.env.NODE_ENV === 'development' ? error : undefined,
       });
     }
 
