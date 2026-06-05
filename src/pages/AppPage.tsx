@@ -176,13 +176,10 @@ export default function AppPage() {
               onClick={() => setShowHistory(false)}
               aria-hidden="true"
             />
-            <div className="fixed inset-0 z-[100] flex lg:hidden bg-white">
+            <div className="fixed inset-0 z-[100] flex bg-white lg:static lg:z-0 lg:block lg:h-full lg:w-[clamp(360px,32vw,420px)] lg:min-w-[360px] lg:max-w-[420px] lg:shrink-0 lg:border-l lg:border-gray-100 lg:overflow-hidden">
               <div className="h-full w-full overflow-hidden bg-white">
                 <HistoryPanel onClose={() => setShowHistory(false)} />
               </div>
-            </div>
-            <div className="hidden lg:block h-full w-[clamp(360px,32vw,420px)] min-w-[360px] max-w-[420px] shrink-0 border-l border-gray-100 bg-white overflow-hidden">
-              <HistoryPanel onClose={() => setShowHistory(false)} />
             </div>
           </>
         )}

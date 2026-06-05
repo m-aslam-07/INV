@@ -120,7 +120,6 @@ export function InvoiceHistoryBrowser({ compact = false, onClose }: { compact?: 
   useEffect(() => {
     let mounted = true;
     if (!loaded) {
-      console.log('[history-debug] opening history');
       loadHistory({ limit: PAGE_SIZE, offset: 0, force: true }).then((data) => {
         if (!mounted) return;
         setHasMore(data.length === PAGE_SIZE);

@@ -148,14 +148,11 @@ export function useInvoiceStorage(): UseInvoiceStorageReturn {
       return cachedHistory;
     }
 
-    console.log('[history-debug] fetch start');
     setLoading(true);
     setError(null);
     try {
       const data = await getInvoices(userId, limit, offset);
-      console.log('[history-debug] fetch success');
       setHistory(prev => {
-        console.log('[history-debug] set invoices');
         if (!append || offset === 0) return data;
         const merged = [...prev];
         data.forEach(entry => {
@@ -179,7 +176,6 @@ export function useInvoiceStorage(): UseInvoiceStorageReturn {
       });
       return [];
     } finally {
-      console.log('[history-debug] loading false');
       setLoading(false);
     }
   }, [userId, isPro, setLoading, setError, setHistory, setLoaded]);
