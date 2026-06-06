@@ -106,7 +106,17 @@ export function useInvoiceStorage(): UseInvoiceStorageReturn {
     try {
       // Cast InvoiceState to InvoiceData — they share the same shape
       const invoiceData = state as unknown as InvoiceData;
-      await saveInvoice(invoiceData, userId);
+      const originalNumber = invoiceData.document?.number;
+
+      const savedRecord = await saveInvoice(invoiceData, userId);
+
+      if (savedRecord) {
+        const finalNumber = savedRecord.invoice_number;
+        if (originalNumber && finalNumber && originalNumber !== finalNumber) {
+          addToast(`Invoice number already existed. Saved as ${finalNumber}`);
+        }
+      }
+
       // Invalidate cache so next loadHistory refetches
       setLoaded(false);
       return true;
@@ -122,7 +132,7 @@ export function useInvoiceStorage(): UseInvoiceStorageReturn {
     } finally {
       setSaving(false);
     }
-  }, [userId, isPro, setSaving, setError, setLoaded]);
+  }, [userId, isPro, setSaving, setError, setLoaded, addToast]);
 
   const save = useCallback(async (): Promise<boolean> => {
     return persist(invoiceStore.getFullState());

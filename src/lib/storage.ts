@@ -290,86 +290,125 @@ export async function saveInvoice(
     console.info('[storage.saveInvoice] using local history cache');
     const invoices = getLocalInvoices();
     const key = getLocalInvoiceKey(invoice);
-    const existing = invoices.findIndex(inv => inv.invoice_json?.id === key || inv.id === key || (inv as any).invoice_number === invoice.document?.number);
-    if (existing !== -1) {
-      invoices[existing] = {
-        ...invoices[existing],
+    const existingIndex = invoices.findIndex(inv => inv.id === key || inv.invoice_json?.id === key);
+
+    if (existingIndex !== -1) {
+      // Update existing local invoice
+      invoices[existingIndex] = {
+        ...invoices[existingIndex],
         ...buildInvoiceRecord(invoice, 'local', pdfUrl),
-        id: invoices[existing].id,
+        id: invoices[existingIndex].id,
         user_id: 'local',
-        created_at: invoices[existing].created_at,
+        created_at: invoices[existingIndex].created_at,
         updated_at: new Date().toISOString(),
       };
       localStorage.setItem('sk_free_invoices', JSON.stringify(invoices));
-      return normalizeStoredInvoice(invoices[existing] as any);
+      return normalizeStoredInvoice(invoices[existingIndex] as any);
+    } else {
+      // Insert new local invoice with duplicate checking
+      const baseInvoiceNumber = invoice.document?.number || key;
+      let candidateNumber = baseInvoiceNumber;
+      let suffix = 2;
+      let isDuplicate = true;
+
+      while (isDuplicate) {
+        const conflictIndex = invoices.findIndex(inv =>
+          (inv.invoice_number === candidateNumber || inv.invoice_json?.document?.number === candidateNumber) &&
+          inv.id !== key
+        );
+
+        if (conflictIndex !== -1) {
+          candidateNumber = `${baseInvoiceNumber}-${suffix}`;
+          suffix++;
+        } else {
+          isDuplicate = false;
+        }
+      }
+
+      if (invoice.document) {
+        invoice.document.number = candidateNumber;
+      }
+
+      const newInvoice: StoredInvoice = {
+        id: key,
+        user_id: 'local',
+        ...buildInvoiceRecord(invoice, 'local', pdfUrl),
+        invoice_json: compactInvoiceJson(invoice),
+        template: invoice.style?.template || '',
+        invoice_number: candidateNumber,
+        client_name: invoice.client?.name || '',
+        company_name: invoice.business?.name || '',
+        subtotal: calcTotals(invoice).subtotal,
+        discount_total: calcTotals(invoice).discount,
+        tax_total: calcTotals(invoice).gstAmount,
+        total_amount: calcTotals(invoice).total,
+        currency: invoice.document?.currency || 'INR',
+        pdf_url: pdfUrl,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      invoices.unshift(newInvoice);
+      localStorage.setItem('sk_free_invoices', JSON.stringify(invoices.slice(0, 50)));
+      return newInvoice;
     }
-    const newInvoice: StoredInvoice = {
-      id: key,
-      user_id: 'local',
-      ...buildInvoiceRecord(invoice, 'local', pdfUrl),
-      invoice_json: compactInvoiceJson(invoice),
-      template: invoice.style?.template || '',
-      invoice_number: invoice.document?.number || key,
-      client_name: invoice.client?.name || '',
-      company_name: invoice.business?.name || '',
-      subtotal: calcTotals(invoice).subtotal,
-      discount_total: calcTotals(invoice).discount,
-      tax_total: calcTotals(invoice).gstAmount,
-      total_amount: calcTotals(invoice).total,
-      currency: invoice.document?.currency || 'INR',
-      pdf_url: pdfUrl,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    invoices.unshift(newInvoice);
-    // Keep max 50 entries
-    localStorage.setItem('sk_free_invoices', JSON.stringify(invoices.slice(0, 50)));
-    return newInvoice;
   }
 
   if (!userId) return null;
 
-  const invoiceKey = invoice.document?.number || invoice.id || '';
-  if (invoiceKey) {
-    console.log('Checking invoice', invoiceKey);
-    console.info('[storage.saveInvoice] checking existing invoice', { userId, invoiceKey });
-    let existing: any = null;
+  // PRO: Supabase
+  let existingById: any = null;
+  if (invoice.id && isUuid(invoice.id)) {
+    console.log('Checking invoice by id', { id: invoice.id, userId });
+    const { data, error } = await supabase
+      .from('invoices')
+      .select(INVOICE_SELECT)
+      .eq('id', invoice.id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    console.log('Invoice id lookup result', { data, error });
+    if (error && !isSchemaMismatch(error)) throw error;
+    existingById = data;
+  }
+
+  // Duplicate checking loop for invoice number
+  const baseInvoiceNumber = invoice.document?.number || invoice.id || '';
+  let candidateNumber = baseInvoiceNumber;
+  let suffix = 2;
+  let isDuplicate = true;
+
+  while (isDuplicate) {
+    let query = supabase
+      .from('invoices')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('invoice_number', candidateNumber);
 
     if (invoice.id && isUuid(invoice.id)) {
-      console.log('Checking invoice by id', { id: invoice.id, userId });
-      const { data, error } = await supabase
-        .from('invoices')
-        .select(INVOICE_SELECT)
-        .eq('id', invoice.id)
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      console.log('Invoice id lookup result', { data, error });
-      if (error && !isSchemaMismatch(error)) throw error;
-      existing = data;
+      query = query.neq('id', invoice.id);
     }
 
-    if (!existing) {
-      console.log('Checking invoice by invoice_number', { invoiceNumber: invoiceKey, userId });
-      const { data, error } = await supabase
-        .from('invoices')
-        .select(INVOICE_SELECT)
-        .eq('user_id', userId)
-        .eq('invoice_number', invoiceKey)
-        .maybeSingle();
+    const { data, error } = await query.maybeSingle();
+    if (error && !isSchemaMismatch(error)) throw error;
 
-      console.log('Invoice number lookup result', { data, error });
-      if (error && !isSchemaMismatch(error)) throw error;
-      existing = data;
-    }
-
-    if (existing) {
-      console.info('[storage.saveInvoice] updating existing invoice', { id: existing.id, userId });
-      return saveInvoiceWithFallback('update', userId, invoice, pdfUrl ?? existing.pdf_url ?? null, existing.id);
+    if (data) {
+      candidateNumber = `${baseInvoiceNumber}-${suffix}`;
+      suffix++;
+    } else {
+      isDuplicate = false;
     }
   }
 
-  console.info('[storage.saveInvoice] inserting new invoice', { userId, invoiceKey });
+  if (invoice.document) {
+    invoice.document.number = candidateNumber;
+  }
+
+  if (existingById) {
+    console.info('[storage.saveInvoice] updating existing invoice', { id: existingById.id, userId, candidateNumber });
+    return saveInvoiceWithFallback('update', userId, invoice, pdfUrl ?? existingById.pdf_url ?? null, existingById.id);
+  }
+
+  console.info('[storage.saveInvoice] inserting new invoice', { userId, candidateNumber });
   return saveInvoiceWithFallback('insert', userId, invoice, pdfUrl);
 }
 export async function getInvoices(
